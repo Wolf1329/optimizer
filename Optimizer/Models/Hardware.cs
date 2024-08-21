@@ -3,6 +3,10 @@ using System.Collections.Generic;
 
 namespace Optimizer
 {
+    /// <summary>
+    /// A full representation of all the computer components with the most usual details
+    /// </summary>
+
     public sealed class CPU
     {
         public string Name { get; set; }

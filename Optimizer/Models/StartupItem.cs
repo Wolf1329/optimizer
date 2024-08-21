@@ -4,6 +4,9 @@ using System.IO;
 
 namespace Optimizer
 {
+    /// <summary>
+    /// Represents a base Windows startup item
+    /// </summary>
     internal class StartupItem
     {
         internal string Name { get; set; }
@@ -17,7 +20,7 @@ namespace Optimizer
 
         public override string ToString()
         {
-            if (RegistryLocation == StartupItemLocation.Folder) return RegistryLocation.ToString();
+            if (RegistryLocation == StartupItemLocation.LMStartupFolder) return RegistryLocation.ToString();
             return string.Format("{0}:{1}", RegistryLocation, StartupType);
         }
     }
@@ -37,7 +40,7 @@ namespace Optimizer
             }
             catch (Exception ex)
             {
-                ErrorLogger.LogError("FolderStartupItem.Remove", ex.Message, ex.StackTrace);
+                Logger.LogError("FolderStartupItem.Remove", ex.Message, ex.StackTrace);
             }
         }
 
@@ -49,7 +52,7 @@ namespace Optimizer
             }
             catch (Exception ex)
             {
-                ErrorLogger.LogError("FolderStartupItem.LocateFile", ex.Message, ex.StackTrace);
+                Logger.LogError("FolderStartupItem.LocateFile", ex.Message, ex.StackTrace);
             }
         }
     }
@@ -66,7 +69,7 @@ namespace Optimizer
             }
             catch (Exception ex)
             {
-                ErrorLogger.LogError("RegistryStartupItem.LocateKey", ex.Message, ex.StackTrace);
+                Logger.LogError("RegistryStartupItem.LocateKey", ex.Message, ex.StackTrace);
             }
         }
 
@@ -78,7 +81,7 @@ namespace Optimizer
             }
             catch (Exception ex)
             {
-                ErrorLogger.LogError("RegistryStartupItem.Remove", ex.Message, ex.StackTrace);
+                Logger.LogError("RegistryStartupItem.Remove", ex.Message, ex.StackTrace);
             }
         }
 
@@ -90,7 +93,7 @@ namespace Optimizer
             }
             catch (Exception ex)
             {
-                ErrorLogger.LogError("RegistryStartupItem.LocateFile", ex.Message, ex.StackTrace);
+                Logger.LogError("RegistryStartupItem.LocateFile", ex.Message, ex.StackTrace);
             }
         }
 

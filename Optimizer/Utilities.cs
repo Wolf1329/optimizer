@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Security.AccessControl;
 using System.Security.Principal;
@@ -61,6 +60,19 @@ namespace Optimizer
             return Color.FromArgb(grayScale, grayScale, grayScale);
         }
 
+        internal static string GetWindowsDetails()
+        {
+            string bitness = Environment.Is64BitOperatingSystem ? "64-bit" : "32-bit";
+            if (CurrentWindowsVersion == WindowsVersion.Windows10 || CurrentWindowsVersion == WindowsVersion.Windows11)
+            {
+                return string.Format("{0} - {1} ({2})", GetOS(), GetWindows10Build(), bitness);
+            }
+            else
+            {
+                return string.Format("{0} - ({1})", GetOS(), bitness);
+            }
+        }
+
         internal static string GetWindows10Build()
         {
             return (string)Registry.GetValue("HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "DisplayVersion", "");
@@ -114,7 +126,7 @@ namespace Optimizer
 
         internal static string GetBitness()
         {
-            string bitness = string.Empty;
+            string bitness;
 
             if (Environment.Is64BitOperatingSystem)
             {
@@ -190,7 +202,7 @@ namespace Optimizer
             }
             catch (Exception ex)
             {
-                ErrorLogger.LogError("Utilities.RunBatchFile", ex.Message, ex.StackTrace);
+                Logger.LogError("Utilities.RunBatchFile", ex.Message, ex.StackTrace);
             }
         }
 
@@ -211,7 +223,7 @@ namespace Optimizer
             catch (Exception ex)
             {
                 p.Dispose();
-                ErrorLogger.LogError("Utilities.ImportRegistryScript", ex.Message, ex.StackTrace);
+                Logger.LogError("Utilities.ImportRegistryScript", ex.Message, ex.StackTrace);
             }
             finally
             {
@@ -221,19 +233,19 @@ namespace Optimizer
 
         internal static void Reboot()
         {
-            Options.SaveSettings();
+            OptionsHelper.SaveSettings();
             Process.Start("shutdown.exe", "/r /t 0");
         }
 
         internal static void DisableHibernation()
         {
             Utilities.RunCommand("powercfg -h off");
-            Utilities.RunCommand("powercfg -h off");
+            Registry.SetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Power", "HibernateEnabled", "0", RegistryValueKind.DWord);
         }
 
         internal static void EnableHibernation()
         {
-            Utilities.RunCommand("powercfg -h on");
+            Utilities.TryDeleteRegistryValue(true, @"SYSTEM\CurrentControlSet\Control\Power", "HibernateEnabled");
             Utilities.RunCommand("powercfg -h on");
         }
 
@@ -244,7 +256,7 @@ namespace Optimizer
 
         internal static bool ServiceExists(string serviceName)
         {
-            return ServiceController.GetServices().Any(serviceController => serviceController.ServiceName.Equals(serviceName));
+            return Array.Exists(ServiceController.GetServices(), (serviceController => serviceController.ServiceName.Equals(serviceName)));
         }
 
         internal static void StopService(string serviceName)
@@ -271,7 +283,7 @@ namespace Optimizer
                 }
                 catch (Exception ex)
                 {
-                    ErrorLogger.LogError("Utilities.StartService", ex.Message, ex.StackTrace);
+                    Logger.LogError("Utilities.StartService", ex.Message, ex.StackTrace);
                 }
             }
         }
@@ -339,6 +351,8 @@ namespace Optimizer
 
         internal static void RunCommand(string command)
         {
+            if (string.IsNullOrEmpty(command)) return;
+
             using (Process p = new Process())
             {
                 p.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
@@ -354,7 +368,7 @@ namespace Optimizer
                 }
                 catch (Exception ex)
                 {
-                    ErrorLogger.LogError("Utilities.RunCommand", ex.Message, ex.StackTrace);
+                    Logger.LogError("Utilities.RunCommand", ex.Message, ex.StackTrace);
                 }
             }
         }
@@ -403,7 +417,7 @@ namespace Optimizer
                 }
                 catch (Exception ex)
                 {
-                    ErrorLogger.LogError("Utilities.RestartExplorer", ex.Message, ex.StackTrace);
+                    Logger.LogError("Utilities.RestartExplorer", ex.Message, ex.StackTrace);
                 }
             }
 
@@ -420,7 +434,7 @@ namespace Optimizer
             }
             catch (Exception ex)
             {
-                ErrorLogger.LogError("Utilities.FindKeyInRegistry", ex.Message, ex.StackTrace);
+                Logger.LogError("Utilities.FindKeyInRegistry", ex.Message, ex.StackTrace);
             }
         }
 
@@ -428,11 +442,11 @@ namespace Optimizer
         {
             try
             {
-                Directory.Delete(Required.CoreFolder, true);
+                Directory.Delete(CoreHelper.CoreFolder, true);
             }
             catch (Exception ex)
             {
-                ErrorLogger.LogError("Utilities.ResetConfiguration", ex.Message, ex.StackTrace);
+                Logger.LogError("Utilities.ResetConfiguration", ex.Message, ex.StackTrace);
             }
             finally
             {
@@ -470,7 +484,7 @@ namespace Optimizer
         // attempt to enable Local Group Policy Editor on Windows 10 Home editions
         internal static void EnableGPEDitor()
         {
-            Utilities.RunBatchFile(Required.ScriptsFolder + "GPEditEnablerInHome.bat");
+            Utilities.RunBatchFile(CoreHelper.ScriptsFolder + "GPEditEnablerInHome.bat");
         }
 
         internal static void TryDeleteRegistryValue(bool localMachine, string path, string valueName)
@@ -494,7 +508,7 @@ namespace Optimizer
 
         internal static void DisableProtectedService(string serviceName)
         {
-            using (TokenPrivilege.TakeOwnership)
+            using (TokenPrivilegeHelper.TakeOwnership)
             {
                 using (RegistryKey allServicesKey = Registry.LocalMachine.OpenSubKeyWritable(@"SYSTEM\CurrentControlSet\Services"))
                 {
@@ -514,33 +528,34 @@ namespace Optimizer
             }
         }
 
-        internal static void RestoreWindowsPhotoViewer()
-        {
-            const string PHOTO_VIEWER_SHELL_COMMAND =
-                @"%SystemRoot%\System32\rundll32.exe ""%ProgramFiles%\Windows Photo Viewer\PhotoViewer.dll"", ImageView_Fullscreen %1";
-            const string PHOTO_VIEWER_CLSID = "{FFE2A43C-56B9-4bf5-9A79-CC6D4285608A}";
+        // old and untested method
+        //internal static void RestoreWindowsPhotoViewer()
+        //{
+        //    const string PHOTO_VIEWER_SHELL_COMMAND =
+        //        @"%SystemRoot%\System32\rundll32.exe ""%ProgramFiles%\Windows Photo Viewer\PhotoViewer.dll"", ImageView_Fullscreen %1";
+        //    const string PHOTO_VIEWER_CLSID = "{FFE2A43C-56B9-4bf5-9A79-CC6D4285608A}";
 
-            Registry.SetValue(@"HKEY_CLASSES_ROOT\Applications\photoviewer.dll\shell\open", "MuiVerb", "@photoviewer.dll,-3043");
-            Registry.SetValue(
-                @"HKEY_CLASSES_ROOT\Applications\photoviewer.dll\shell\open\command", valueName: null,
-                PHOTO_VIEWER_SHELL_COMMAND, RegistryValueKind.ExpandString
-            );
-            Registry.SetValue(@"HKEY_CLASSES_ROOT\Applications\photoviewer.dll\shell\open\DropTarget", "Clsid", PHOTO_VIEWER_CLSID);
+        //    Registry.SetValue(@"HKEY_CLASSES_ROOT\Applications\photoviewer.dll\shell\open", "MuiVerb", "@photoviewer.dll,-3043");
+        //    Registry.SetValue(
+        //        @"HKEY_CLASSES_ROOT\Applications\photoviewer.dll\shell\open\command", valueName: null,
+        //        PHOTO_VIEWER_SHELL_COMMAND, RegistryValueKind.ExpandString
+        //    );
+        //    Registry.SetValue(@"HKEY_CLASSES_ROOT\Applications\photoviewer.dll\shell\open\DropTarget", "Clsid", PHOTO_VIEWER_CLSID);
 
-            string[] imageTypes = { "Paint.Picture", "giffile", "jpegfile", "pngfile" };
-            foreach (string type in imageTypes)
-            {
-                Registry.SetValue(
-                    $@"HKEY_CLASSES_ROOT\{type}\shell\open\command", valueName: null,
-                    PHOTO_VIEWER_SHELL_COMMAND, RegistryValueKind.ExpandString
-                );
-                Registry.SetValue($@"HKEY_CLASSES_ROOT\{type}\shell\open\DropTarget", "Clsid", PHOTO_VIEWER_CLSID);
-            }
-        }
+        //    string[] imageTypes = { "Paint.Picture", "giffile", "jpegfile", "pngfile" };
+        //    foreach (string type in imageTypes)
+        //    {
+        //        Registry.SetValue(
+        //            $@"HKEY_CLASSES_ROOT\{type}\shell\open\command", valueName: null,
+        //            PHOTO_VIEWER_SHELL_COMMAND, RegistryValueKind.ExpandString
+        //        );
+        //        Registry.SetValue($@"HKEY_CLASSES_ROOT\{type}\shell\open\DropTarget", "Clsid", PHOTO_VIEWER_CLSID);
+        //    }
+        //}
 
         internal static void EnableProtectedService(string serviceName)
         {
-            using (TokenPrivilege.TakeOwnership)
+            using (TokenPrivilegeHelper.TakeOwnership)
             {
                 using (RegistryKey allServicesKey = Registry.LocalMachine.OpenSubKeyWritable(@"SYSTEM\CurrentControlSet\Services"))
                 {
@@ -562,7 +577,7 @@ namespace Optimizer
 
         public static RegistryKey OpenSubKeyWritable(this RegistryKey registryKey, string subkeyName, RegistryRights? rights = null)
         {
-            RegistryKey subKey = null;
+            RegistryKey subKey;
 
             if (rights == null)
                 subKey = registryKey.OpenSubKey(subkeyName, RegistryKeyPermissionCheck.ReadWriteSubTree, RegistryRights.FullControl);
@@ -571,7 +586,7 @@ namespace Optimizer
 
             if (subKey == null)
             {
-                ErrorLogger.LogError("Utilities.OpenSubKeyWritable", $"Subkey {subkeyName} not found.", "-");
+                Logger.LogError("Utilities.OpenSubKeyWritable", $"Subkey {subkeyName} not found.", "-");
             }
 
             return subKey;
@@ -663,6 +678,23 @@ namespace Optimizer
             catch { }
         }
 
+        internal static void EnableLoginVerbose()
+        {
+            try
+            {
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "verbosestatus", 1, RegistryValueKind.DWord);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError("Utilities.EnableLoginVerbose", ex.Message, ex.StackTrace);
+            }
+        }
+
+        internal static void DisableLoginVerbose()
+        {
+            Utilities.TryDeleteRegistryValue(true, @"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "verbosestatus");
+        }
+
         // [!!!]
         internal static void UnlockAllCores()
         {
@@ -671,7 +703,37 @@ namespace Optimizer
                 Registry.SetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\0cc5b647-c1df-4637-891a-dec35c318583", "ValueMax", 0, RegistryValueKind.DWord);
                 Registry.SetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\0cc5b647-c1df-4637-891a-dec35c318583", "ValueMin", 0, RegistryValueKind.DWord);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Logger.LogError("Utilities.UnlockAllCores", ex.Message, ex.StackTrace);
+            }
+        }
+
+        // value = RAM in GB * 1024 * 1024
+        internal static void DisableSvcHostProcessSplitting(int ramInGb)
+        {
+            try
+            {
+                ramInGb = ramInGb * 1024 * 1024;
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control", "SvcHostSplitThresholdInKB", ramInGb, RegistryValueKind.DWord);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError("Utilities.DisableSvcHostProcessSplitting", ex.Message, ex.StackTrace);
+            }
+        }
+
+        // reset the value to default
+        internal static void EnableSvcHostProcessSplitting()
+        {
+            try
+            {
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control", "SvcHostSplitThresholdInKB", 380000, RegistryValueKind.DWord);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError("Utilities.EnableSvcHostProcessSplitting", ex.Message, ex.StackTrace);
+            }
         }
 
         internal static void DisableHPET()
@@ -688,17 +750,6 @@ namespace Optimizer
             Utilities.RunCommand("bcdedit /set disabledynamictick no");
         }
 
-        // [!!!]
-        //internal static void ChangeNumberOfSvcHostByRAM(string ram)
-        //{
-        //    try
-        //    {
-        //        float kbs = float.Parse(ram);
-        //        Registry.SetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control", "SvcHostSplitThresholdInKB", kbs * 1024 * 1024, RegistryValueKind.DWord);
-        //    }
-        //    catch { }
-        //}
-
         internal static void RegisterAutoStart()
         {
             try
@@ -710,7 +761,7 @@ namespace Optimizer
             }
             catch (Exception ex)
             {
-                ErrorLogger.LogError("Utilities.AddToStartup", ex.Message, ex.StackTrace);
+                Logger.LogError("Utilities.AddToStartup", ex.Message, ex.StackTrace);
             }
         }
 
@@ -725,7 +776,32 @@ namespace Optimizer
             }
             catch (Exception ex)
             {
-                ErrorLogger.LogError("Utilities.DeleteFromStartup", ex.Message, ex.StackTrace);
+                Logger.LogError("Utilities.DeleteFromStartup", ex.Message, ex.StackTrace);
+            }
+        }
+
+        internal static void AllowProcessToRun(string pName)
+        {
+            try
+            {
+                using (RegistryKey ifeo = Registry.LocalMachine.OpenSubKeyWritable(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion", RegistryRights.FullControl))
+                {
+                    if (ifeo == null) return;
+
+                    ifeo.GrantFullControlOnSubKey("Image File Execution Options");
+
+                    using (RegistryKey k = ifeo.OpenSubKeyWritable("Image File Execution Options", RegistryRights.FullControl))
+                    {
+                        if (k == null) return;
+
+                        k.GrantFullControlOnSubKey(pName);
+                        k.DeleteSubKey(pName);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError("Utilities.AllowProcessToRun", ex.Message, ex.StackTrace);
             }
         }
 
@@ -757,7 +833,125 @@ namespace Optimizer
             }
             catch (Exception ex)
             {
-                ErrorLogger.LogError("Utilities.PreventProcessFromRunning", ex.Message, ex.StackTrace);
+                Logger.LogError("Utilities.PreventProcessFromRunning", ex.Message, ex.StackTrace);
+            }
+        }
+
+        internal static string GetUserDownloadsFolder()
+        {
+            try
+            {
+                return Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders", "{374DE290-123F-4565-9164-39C4925E467B}", string.Empty).ToString();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError("Utilities.GetUserDownloadsFolder", ex.Message, ex.StackTrace);
+                return string.Empty;
+            }
+        }
+
+        internal static void ReinforceCurrentTweaks()
+        {
+            SilentConfig silentConfig = new SilentConfig();
+            Tweaks silentConfigTweaks = new Tweaks();
+            silentConfig.Tweaks = silentConfigTweaks;
+
+            #region Windows General
+            silentConfig.Tweaks.EnablePerformanceTweaks = OptionsHelper.CurrentOptions.EnablePerformanceTweaks ? true : (bool?)null;
+            silentConfig.Tweaks.EnableUtcTime = OptionsHelper.CurrentOptions.EnableUtcTime ? true : (bool?)null;
+            silentConfig.Tweaks.ShowAllTrayIcons = OptionsHelper.CurrentOptions.ShowAllTrayIcons ? true : (bool?)null;
+            silentConfig.Tweaks.RemoveMenusDelay = OptionsHelper.CurrentOptions.RemoveMenusDelay ? true : (bool?)null;
+            silentConfig.Tweaks.DisableNetworkThrottling = OptionsHelper.CurrentOptions.DisableNetworkThrottling ? true : (bool?)null;
+            silentConfig.Tweaks.DisableWindowsDefender = OptionsHelper.CurrentOptions.DisableWindowsDefender ? true : (bool?)null;
+            silentConfig.Tweaks.DisableSystemRestore = OptionsHelper.CurrentOptions.DisableSystemRestore ? true : (bool?)null;
+            silentConfig.Tweaks.DisablePrintService = OptionsHelper.CurrentOptions.DisablePrintService ? true : (bool?)null;
+            silentConfig.Tweaks.DisableMediaPlayerSharing = OptionsHelper.CurrentOptions.DisableMediaPlayerSharing ? true : (bool?)null;
+            silentConfig.Tweaks.DisableErrorReporting = OptionsHelper.CurrentOptions.DisableErrorReporting ? true : (bool?)null;
+            silentConfig.Tweaks.DisableHomeGroup = OptionsHelper.CurrentOptions.DisableHomeGroup ? true : (bool?)null;
+            silentConfig.Tweaks.DisableSuperfetch = OptionsHelper.CurrentOptions.DisableSuperfetch ? true : (bool?)null;
+            silentConfig.Tweaks.DisableTelemetryTasks = OptionsHelper.CurrentOptions.DisableTelemetryTasks ? true : (bool?)null;
+            silentConfig.Tweaks.DisableOffice2016Telemetry = OptionsHelper.CurrentOptions.DisableOffice2016Telemetry ? true : (bool?)null;
+            silentConfig.Tweaks.DisableCompatibilityAssistant = OptionsHelper.CurrentOptions.DisableCompatibilityAssistant ? true : (bool?)null;
+            silentConfig.Tweaks.DisableHibernation = OptionsHelper.CurrentOptions.DisableHibernation ? true : (bool?)null;
+            silentConfig.Tweaks.DisableSMB1 = OptionsHelper.CurrentOptions.DisableSMB1 ? true : (bool?)null;
+            silentConfig.Tweaks.DisableSMB2 = OptionsHelper.CurrentOptions.DisableSMB2 ? true : (bool?)null;
+            silentConfig.Tweaks.DisableNTFSTimeStamp = OptionsHelper.CurrentOptions.DisableNTFSTimeStamp ? true : (bool?)null;
+            silentConfig.Tweaks.DisableFaxService = OptionsHelper.CurrentOptions.DisableFaxService ? true : (bool?)null;
+            silentConfig.Tweaks.DisableSmartScreen = OptionsHelper.CurrentOptions.DisableSmartScreen ? true : (bool?)null;
+            silentConfig.Tweaks.DisableStickyKeys = OptionsHelper.CurrentOptions.DisableStickyKeys ? true : (bool?)null;
+            silentConfig.Tweaks.DisableVisualStudioTelemetry = OptionsHelper.CurrentOptions.DisableVisualStudioTelemetry ? true : (bool?)null;
+            silentConfig.Tweaks.DisableFirefoxTemeletry = OptionsHelper.CurrentOptions.DisableFirefoxTemeletry ? true : (bool?)null;
+            silentConfig.Tweaks.DisableChromeTelemetry = OptionsHelper.CurrentOptions.DisableChromeTelemetry ? true : (bool?)null;
+            silentConfig.Tweaks.DisableNVIDIATelemetry = OptionsHelper.CurrentOptions.DisableNVIDIATelemetry ? true : (bool?)null;
+            silentConfig.Tweaks.DisableSearch = OptionsHelper.CurrentOptions.DisableSearch ? true : (bool?)null;
+            #endregion
+            #region Windows 8.1
+            silentConfig.Tweaks.DisableOneDrive = OptionsHelper.CurrentOptions.DisableOneDrive ? true : (bool?)null;
+            #endregion
+            #region Windows 10
+            silentConfig.Tweaks.DisableCloudClipboard = OptionsHelper.CurrentOptions.DisableCloudClipboard ? true : (bool?)null;
+            silentConfig.Tweaks.EnableLegacyVolumeSlider = OptionsHelper.CurrentOptions.EnableLegacyVolumeSlider ? true : (bool?)null;
+            silentConfig.Tweaks.DisableQuickAccessHistory = OptionsHelper.CurrentOptions.DisableQuickAccessHistory ? true : (bool?)null;
+            silentConfig.Tweaks.DisableStartMenuAds = OptionsHelper.CurrentOptions.DisableStartMenuAds ? true : (bool?)null;
+            silentConfig.Tweaks.UninstallOneDrive = OptionsHelper.CurrentOptions.UninstallOneDrive ? true : (bool?)null;
+            silentConfig.Tweaks.DisableMyPeople = OptionsHelper.CurrentOptions.DisableMyPeople ? true : (bool?)null;
+            silentConfig.Tweaks.DisableAutomaticUpdates = OptionsHelper.CurrentOptions.DisableAutomaticUpdates ? true : (bool?)null;
+            silentConfig.Tweaks.ExcludeDrivers = OptionsHelper.CurrentOptions.ExcludeDrivers ? true : (bool?)null;
+            silentConfig.Tweaks.DisableTelemetryServices = OptionsHelper.CurrentOptions.DisableTelemetryServices ? true : (bool?)null;
+            silentConfig.Tweaks.DisablePrivacyOptions = OptionsHelper.CurrentOptions.DisablePrivacyOptions ? true : (bool?)null;
+            silentConfig.Tweaks.DisableCortana = OptionsHelper.CurrentOptions.DisableCortana ? true : (bool?)null;
+            silentConfig.Tweaks.DisableSensorServices = OptionsHelper.CurrentOptions.DisableSensorServices ? true : (bool?)null;
+            silentConfig.Tweaks.DisableWindowsInk = OptionsHelper.CurrentOptions.DisableWindowsInk ? true : (bool?)null;
+            silentConfig.Tweaks.DisableSpellingTyping = OptionsHelper.CurrentOptions.DisableSpellingTyping ? true : (bool?)null;
+            silentConfig.Tweaks.DisableXboxLive = OptionsHelper.CurrentOptions.DisableXboxLive ? true : (bool?)null;
+            silentConfig.Tweaks.DisableGameBar = OptionsHelper.CurrentOptions.DisableGameBar ? true : (bool?)null;
+            silentConfig.Tweaks.DisableInsiderService = OptionsHelper.CurrentOptions.DisableInsiderService ? true : (bool?)null;
+            silentConfig.Tweaks.DisableStoreUpdates = OptionsHelper.CurrentOptions.DisableStoreUpdates ? true : (bool?)null;
+            silentConfig.Tweaks.EnableLongPaths = OptionsHelper.CurrentOptions.EnableLongPaths ? true : (bool?)null;
+            silentConfig.Tweaks.RemoveCastToDevice = OptionsHelper.CurrentOptions.RemoveCastToDevice ? true : (bool?)null;
+            silentConfig.Tweaks.EnableGamingMode = OptionsHelper.CurrentOptions.EnableGamingMode ? true : (bool?)null;
+            silentConfig.Tweaks.DisableTPMCheck = OptionsHelper.CurrentOptions.DisableTPMCheck ? true : (bool?)null;
+            silentConfig.Tweaks.DisableVirtualizationBasedTechnology = OptionsHelper.CurrentOptions.DisableVBS ? true : (bool?)null;
+            silentConfig.Tweaks.DisableEdgeDiscoverBar = OptionsHelper.CurrentOptions.DisableEdgeDiscoverBar ? true : (bool?)null;
+            silentConfig.Tweaks.DisableEdgeTelemetry = OptionsHelper.CurrentOptions.DisableEdgeTelemetry ? true : (bool?)null;
+            silentConfig.Tweaks.RestoreClassicPhotoViewer = OptionsHelper.CurrentOptions.RestoreClassicPhotoViewer ? true : (bool?)null;
+            silentConfig.Tweaks.DisableNewsInterests = OptionsHelper.CurrentOptions.DisableNewsInterests ? true : (bool?)null;
+            silentConfig.Tweaks.HideTaskbarSearch = OptionsHelper.CurrentOptions.HideTaskbarSearch ? true : (bool?)null;
+            silentConfig.Tweaks.HideTaskbarWeather = OptionsHelper.CurrentOptions.HideTaskbarWeather ? true : (bool?)null;
+            silentConfig.Tweaks.DisableModernStandby = OptionsHelper.CurrentOptions.DisableModernStandby ? true : (bool?)null;
+            #endregion
+            #region Windows 11
+            silentConfig.Tweaks.TaskbarToLeft = OptionsHelper.CurrentOptions.TaskbarToLeft ? true : (bool?)null;
+            silentConfig.Tweaks.DisableStickers = OptionsHelper.CurrentOptions.DisableStickers ? true : (bool?)null;
+            silentConfig.Tweaks.CompactMode = OptionsHelper.CurrentOptions.CompactMode ? true : (bool?)null;
+            silentConfig.Tweaks.DisableSnapAssist = OptionsHelper.CurrentOptions.DisableSnapAssist ? true : (bool?)null;
+            silentConfig.Tweaks.DisableWidgets = OptionsHelper.CurrentOptions.DisableWidgets ? true : (bool?)null;
+            silentConfig.Tweaks.DisableChat = OptionsHelper.CurrentOptions.DisableChat ? true : (bool?)null;
+            silentConfig.Tweaks.ClassicMenu = OptionsHelper.CurrentOptions.ClassicMenu ? true : (bool?)null;
+            silentConfig.Tweaks.DisableCoPilotAI = OptionsHelper.CurrentOptions.DisableCoPilotAI ? true : (bool?)null;
+            #endregion
+
+            SilentOps.CurrentSilentConfig = silentConfig;
+
+            if (CurrentWindowsVersion == WindowsVersion.Windows7)
+            {
+                SilentOps.ProcessTweaksGeneral();
+            }
+            if (CurrentWindowsVersion == WindowsVersion.Windows8)
+            {
+                SilentOps.ProcessTweaksGeneral();
+                SilentOps.ProcessTweaksWindows8();
+            }
+            if (CurrentWindowsVersion == WindowsVersion.Windows10)
+            {
+                SilentOps.ProcessTweaksGeneral();
+                SilentOps.ProcessTweaksWindows10();
+            }
+            if (CurrentWindowsVersion == WindowsVersion.Windows11)
+            {
+                SilentOps.ProcessTweaksGeneral();
+                SilentOps.ProcessTweaksWindows10();
+                SilentOps.ProcessTweaksWindows11();
             }
         }
     }

@@ -68,7 +68,7 @@ namespace Optimizer
 
             // Send TCM_SETMINTABWIDTH
             string maxTitle = string.Empty;
-            foreach(TabPage x in this.TabPages)
+            foreach (TabPage x in this.TabPages)
             {
                 if (x.Text.Length > maxTitle.Length) maxTitle = x.Text;
             }
@@ -87,7 +87,7 @@ namespace Optimizer
             Margin = new Padding(0);
             Padding = new Point(0, 0);
 
-            this.SizeMode = TabSizeMode.Normal;
+            this.SizeMode = TabSizeMode.Fixed;
         }
 
         private void SetDragState() => bDrag = (CanDrag && bMouseDown && bShiftKey);
@@ -96,6 +96,7 @@ namespace Optimizer
         {
             bMouseDown = true;
             SetDragState();
+            if (SelectedIndex == -1) return;
             Rectangle rectDrag = GetTabRect(SelectedIndex);
             ptPreviousLocation = new Point(rectDrag.X, rectDrag.Y);
             rectDrag.Width += 1; rectDrag.Height += 1;
@@ -172,13 +173,14 @@ namespace Optimizer
             if (TabCount > 0)
             {
                 using (SolidBrush brushBackgroundTab = new SolidBrush(Color.FromArgb(40, 40, 40)))
-                using (SolidBrush brushDivider = new SolidBrush(Options.ForegroundColor))
+                using (SolidBrush brushDivider = new SolidBrush(OptionsHelper.ForegroundColor))
                 {
                     {
                         e.Graphics.FillRectangle(brushBackgroundTab, DisplayRectangle);
                     }
 
                     {
+                        if (SelectedIndex == -1) return;
                         Rectangle rectDivider = GetTabRect(SelectedIndex);
 
                         if (Alignment == TabAlignment.Top || Alignment == TabAlignment.Bottom)
@@ -206,16 +208,16 @@ namespace Optimizer
 
             SolidBrush brushActiveText;
 
-            using (Pen penActive = new Pen(Options.ForegroundColor))
+            using (Pen penActive = new Pen(OptionsHelper.ForegroundColor))
             using (Pen penBorder = new Pen(Color.FromArgb(40, 40, 40), 0))
-            using (SolidBrush brushActive = new SolidBrush(Options.ForegroundColor))
+            using (SolidBrush brushActive = new SolidBrush(OptionsHelper.ForegroundColor))
             using (SolidBrush brushInActive = new SolidBrush(Color.FromArgb(40, 40, 40)))
-            using (SolidBrush brushAlternative = new SolidBrush(Options.ForegroundColor))
-            using (SolidBrush brushActiveIndicator = new SolidBrush(ControlPaint.Light(Options.ForegroundColor)))
-            using (SolidBrush brushInActiveIndicator = new SolidBrush(Options.ForegroundColor))
-            using (brushActiveText = new SolidBrush(Options.TextColor))
+            using (SolidBrush brushAlternative = new SolidBrush(OptionsHelper.ForegroundColor))
+            using (SolidBrush brushActiveIndicator = new SolidBrush(ControlPaint.Light(OptionsHelper.ForegroundColor)))
+            using (SolidBrush brushInActiveIndicator = new SolidBrush(OptionsHelper.ForegroundColor))
+            using (brushActiveText = new SolidBrush(OptionsHelper.TextColor))
             using (SolidBrush brushInActiveText = new SolidBrush(Color.White))
-            using (SolidBrush brushDrag = new SolidBrush(ControlPaint.Dark(Options.ForegroundColor)))
+            using (SolidBrush brushDrag = new SolidBrush(ControlPaint.Dark(OptionsHelper.ForegroundColor)))
             {
                 //if (MoonManager.THEME_PREFERENCE == THEME.LIGHT) brushActiveText = new SolidBrush(Color.White);
 

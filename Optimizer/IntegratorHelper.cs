@@ -5,18 +5,14 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Net;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace Optimizer
 {
-    public static class Integrator
+    public static class IntegratorHelper
     {
         internal static string FolderDefaultIcon = @"%systemroot%\system32\imageres.dll,-112";
-
-        private static T DirectCast<T>(object o)
-        {
-            return (T)o;
-        }
 
         internal static void CreateCustomCommand(string file, string keyword)
         {
@@ -92,13 +88,13 @@ namespace Optimizer
                     }
                     catch (Exception ex)
                     {
-                        ErrorLogger.LogError("Integrator.RemoveItem", ex.Message, ex.StackTrace);
+                        Logger.LogError("Integrator.RemoveItem", ex.Message, ex.StackTrace);
                     }
                 }
             }
             catch (Exception ex)
             {
-                ErrorLogger.LogError("Integrator.RemoveItem", ex.Message, ex.StackTrace);
+                Logger.LogError("Integrator.RemoveItem", ex.Message, ex.StackTrace);
             }
         }
 
@@ -110,7 +106,7 @@ namespace Optimizer
             }
             catch (Exception ex)
             {
-                ErrorLogger.LogError("Integrator.ItemExists", ex.Message, ex.StackTrace);
+                Logger.LogError("Integrator.ItemExists", ex.Message, ex.StackTrace);
                 return false;
             }
         }
@@ -123,7 +119,7 @@ namespace Optimizer
             }
             catch (Exception ex)
             {
-                ErrorLogger.LogError("Integrator.TakeOwnershipExists", ex.Message, ex.StackTrace);
+                Logger.LogError("Integrator.TakeOwnershipExists", ex.Message, ex.StackTrace);
                 return false;
             }
         }
@@ -136,7 +132,7 @@ namespace Optimizer
             }
             catch (Exception ex)
             {
-                ErrorLogger.LogError("Integrator.OpenWithCMDExists", ex.Message, ex.StackTrace);
+                Logger.LogError("Integrator.OpenWithCMDExists", ex.Message, ex.StackTrace);
                 return false;
             }
         }
@@ -153,7 +149,7 @@ namespace Optimizer
                     }
                     catch (Exception ex)
                     {
-                        ErrorLogger.LogError("Integrator.RemoveAllItems", ex.Message, ex.StackTrace);
+                        Logger.LogError("Integrator.RemoveAllItems", ex.Message, ex.StackTrace);
                     }
                 }
             }
@@ -168,10 +164,10 @@ namespace Optimizer
                 Icon ico = Icon.ExtractAssociatedIcon(fileName);
 
                 Clipboard.SetImage(ico.ToBitmap());
-                Clipboard.GetImage().Save(Required.ExtractedIconsFolder + itemName + ".ico", ImageFormat.Bmp);
+                Clipboard.GetImage().Save(CoreHelper.ExtractedIconsFolder + itemName + ".ico", ImageFormat.Bmp);
                 Clipboard.Clear();
 
-                iconPath = Required.ExtractedIconsFolder + itemName + ".ico";
+                iconPath = CoreHelper.ExtractedIconsFolder + itemName + ".ico";
             }
 
             return iconPath;
@@ -186,14 +182,14 @@ namespace Optimizer
                 Uri url = new Uri(link);
                 if (url.HostNameType == UriHostNameType.Dns)
                 {
-                    Image.FromStream(((HttpWebResponse)WebRequest.Create("http://" + url.Host + "/favicon.ico").GetResponse()).GetResponseStream()).Save(Required.FavIconsFolder + name + ".ico", ImageFormat.Bmp);
+                    Image.FromStream(((HttpWebResponse)WebRequest.Create("http://" + url.Host + "/favicon.ico").GetResponse()).GetResponseStream()).Save(CoreHelper.FavIconsFolder + name + ".ico", ImageFormat.Bmp);
 
-                    favicon = Required.FavIconsFolder + name + ".ico";
+                    favicon = CoreHelper.FavIconsFolder + name + ".ico";
                 }
             }
             catch (Exception ex)
             {
-                ErrorLogger.LogError("Integrator.DownloadFavicon", ex.Message, ex.StackTrace);
+                Logger.LogError("Integrator.DownloadFavicon", ex.Message, ex.StackTrace);
             }
 
             return favicon;
@@ -248,7 +244,7 @@ namespace Optimizer
 
         internal static void InstallOpenWithCMD()
         {
-            Utilities.ImportRegistryScript(Required.ScriptsFolder + "AddOpenWithCMD.reg");
+            Utilities.ImportRegistryScript(CoreHelper.ScriptsFolder + "AddOpenWithCMD.reg");
         }
 
         internal static void DeleteOpenWithCMD()
@@ -260,37 +256,94 @@ namespace Optimizer
 
         internal static void InstallTakeOwnership(bool remove)
         {
-            if (!File.Exists(Required.ReadyMadeMenusFolder + "InstallTakeOwnership.reg"))
+            if (!File.Exists(CoreHelper.ReadyMadeMenusFolder + "InstallTakeOwnership.reg"))
             {
                 try
                 {
-                    File.WriteAllText(Required.ReadyMadeMenusFolder + "InstallTakeOwnership.reg", Properties.Resources.InstallTakeOwnership);
+                    File.WriteAllText(CoreHelper.ReadyMadeMenusFolder + "InstallTakeOwnership.reg", Properties.Resources.InstallTakeOwnership);
                 }
                 catch (Exception ex)
                 {
-                    ErrorLogger.LogError("Integrator.TakeOwnership", ex.Message, ex.StackTrace);
+                    Logger.LogError("Integrator.TakeOwnership", ex.Message, ex.StackTrace);
                 }
             }
-            if (!File.Exists(Required.ReadyMadeMenusFolder + "RemoveTakeOwnership.reg"))
+            if (!File.Exists(CoreHelper.ReadyMadeMenusFolder + "RemoveTakeOwnership.reg"))
             {
                 try
                 {
-                    File.WriteAllText(Required.ReadyMadeMenusFolder + "RemoveTakeOwnership.reg", Properties.Resources.RemoveTakeOwnership);
+                    File.WriteAllText(CoreHelper.ReadyMadeMenusFolder + "RemoveTakeOwnership.reg", Properties.Resources.RemoveTakeOwnership);
                 }
                 catch (Exception ex)
                 {
-                    ErrorLogger.LogError("Integrator.TakeOwnership", ex.Message, ex.StackTrace);
+                    Logger.LogError("Integrator.TakeOwnership", ex.Message, ex.StackTrace);
                 }
             }
 
             if (!remove)
             {
-                Utilities.ImportRegistryScript(Required.ReadyMadeMenusFolder + "InstallTakeOwnership.reg");
+                Utilities.ImportRegistryScript(CoreHelper.ReadyMadeMenusFolder + "InstallTakeOwnership.reg");
             }
             else
             {
-                Utilities.ImportRegistryScript(Required.ReadyMadeMenusFolder + "RemoveTakeOwnership.reg");
+                Utilities.ImportRegistryScript(CoreHelper.ReadyMadeMenusFolder + "RemoveTakeOwnership.reg");
             }
+        }
+
+        /// <summary>
+        /// PATH System Variables functions
+        /// </summary>
+
+        const int HWND_BROADCAST = 0xffff;
+        const uint WM_SETTINGCHANGE = 0x001a;
+
+        [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        static extern bool SendNotifyMessage(IntPtr hWnd, uint Msg, UIntPtr wParam, string lParam);
+
+        internal static string[] GetPathSystemVariables()
+        {
+            try
+            {
+                string basePathKey = @"SYSTEM\CurrentControlSet\Control\Session Manager\Environment";
+                using (var key = Registry.LocalMachine.OpenSubKey(basePathKey, false))
+                {
+                    string result = key.GetValue("Path", new string[] { }).ToString();
+                    return result.Split(';');
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError("Integrator.GetPathSystemVariables", ex.Message, ex.StackTrace);
+                return new string[] { };
+            }
+        }
+
+        internal static void UpdatePathSystemVariables(string[] newValues)
+        {
+            if (newValues == null || newValues.Length <= 0)
+            {
+                return;
+            }
+
+            try
+            {
+                string basePathKey = @"SYSTEM\CurrentControlSet\Control\Session Manager\Environment";
+                using (var key = Registry.LocalMachine.OpenSubKey(basePathKey, true))
+                {
+                    string updatedSystemVariables = string.Join(";", newValues);
+                    key.SetValue("Path", updatedSystemVariables, RegistryValueKind.ExpandString);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError("Integrator.UpdatePathSystemVariables", ex.Message, ex.StackTrace);
+            }
+        }
+
+        // Notifies the shell that System variables have been changed
+        // Otherwise, a restart is needed
+        internal static void ApplyPathSystemVariables()
+        {
+            SendNotifyMessage((IntPtr)HWND_BROADCAST, WM_SETTINGCHANGE, (UIntPtr)0, "Environment");
         }
     }
 }

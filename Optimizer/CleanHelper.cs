@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -60,13 +60,16 @@ namespace Optimizer
         static string[] edgeCookies =
         {
             Path.Combine(ProfileAppDataLocal, "Microsoft\\Edge\\User Data\\Default\\Cookies"),
-            Path.Combine(ProfileAppDataLocal, "Microsoft\\Edge\\User Data\\Default\\IndexedDB")
+            Path.Combine(ProfileAppDataLocal, "Microsoft\\Edge\\User Data\\Default\\IndexedDB"),
+            Path.Combine(ProfileAppDataLocal, "Microsoft\\Edge\\User Data\\Default\\Local Storage")
         };
         static string[] edgeSession =
         {
             Path.Combine(ProfileAppDataLocal, "Microsoft\\Edge\\User Data\\Default\\Sessions"),
             Path.Combine(ProfileAppDataLocal, "Microsoft\\Edge\\User Data\\Default\\Session Storage"),
-            Path.Combine(ProfileAppDataLocal, "Microsoft\\Edge\\User Data\\Default\\Extension State")
+            Path.Combine(ProfileAppDataLocal, "Microsoft\\Edge\\User Data\\Default\\Extension State"),
+            Path.Combine(ProfileAppDataLocal, "Microsoft\\Edge\\User Data\\Default\\Local Extension Settings"),
+            Path.Combine(ProfileAppDataLocal, "Microsoft\\Edge\\User Data\\Default\\Local Storage")
         };
         static string[] edgeCache =
         {
@@ -78,6 +81,9 @@ namespace Optimizer
             Path.Combine(ProfileAppDataLocal, "Microsoft\\Edge\\User Data\\Default\\Service Worker\\ScriptCache"),
             Path.Combine(ProfileAppDataLocal, "Microsoft\\Edge\\User Data\\GrShaderCache\\GPUCache"),
             Path.Combine(ProfileAppDataLocal, "Microsoft\\Edge\\User Data\\Default\\Service Worker\\Database"),
+            Path.Combine(ProfileAppDataLocal, "Microsoft\\Edge\\User Data\\Default\\Service Worker"),
+            Path.Combine(ProfileAppDataLocal, "Microsoft\\Edge\\User Data\\Default\\LocalCache"),
+            Path.Combine(ProfileAppDataLocal, "Microsoft\\Edge\\User Data\\Default\\#!001\\Cache")
         };
 
         // BRAVE FOLDERS
@@ -89,18 +95,24 @@ namespace Optimizer
             Path.Combine(ProfileAppDataLocal, "BraveSoftware\\Brave-Browser\\User Data\\Default\\Sessions"),
             Path.Combine(ProfileAppDataLocal, "BraveSoftware\\Brave-Browser\\User Data\\Default\\Session Storage"),
             Path.Combine(ProfileAppDataLocal, "BraveSoftware\\Brave-Browser\\User Data\\Default\\Extension State"),
+            Path.Combine(ProfileAppDataLocal, "BraveSoftware\\Brave-Browser\\User Data\\Default\\Local Storage"),
+            Path.Combine(ProfileAppDataLocal, "BraveSoftware\\Brave-Browser\\User Data\\Default\\IndexedDB"),
+            Path.Combine(ProfileAppDataLocal, "BraveSoftware\\Brave-Browser\\User Data\\Default\\Service Worker")
         };
         static string[] braveCookiesDirs =
         {
             Path.Combine(ProfileAppDataLocal, "BraveSoftware\\Brave-Browser\\User Data\\Default\\IndexedDB"),
             Path.Combine(ProfileAppDataLocal, "BraveSoftware\\Brave-Browser\\User Data\\Default\\Cookies"),
-            Path.Combine(ProfileAppDataLocal, "BraveSoftware\\Brave-Browser\\User Data\\Default\\Cookies-journal")
+            Path.Combine(ProfileAppDataLocal, "BraveSoftware\\Brave-Browser\\User Data\\Default\\Cookies-journal"),
+            Path.Combine(ProfileAppDataLocal, "BraveSoftware\\Brave-Browser\\User Data\\Default\\Local Storage")
         };
         static string[] braveHistoryDirs =
         {
             Path.Combine(ProfileAppDataLocal, "BraveSoftware\\Brave-Browser\\User Data\\Default\\History"),
             Path.Combine(ProfileAppDataLocal, "BraveSoftware\\Brave-Browser\\User Data\\Default\\History Provider Cache"),
-            Path.Combine(ProfileAppDataLocal, "BraveSoftware\\Brave-Browser\\User Data\\Default\\History-journal")
+            Path.Combine(ProfileAppDataLocal, "BraveSoftware\\Brave-Browser\\User Data\\Default\\History-journal"),
+            Path.Combine(ProfileAppDataLocal, "BraveSoftware\\Brave-Browser\\User Data\\Default\\Top Sites"),
+            Path.Combine(ProfileAppDataLocal, "BraveSoftware\\Brave-Browser\\User Data\\Default\\Visited Links")
         };
 
 
@@ -150,7 +162,7 @@ namespace Optimizer
                     if (Directory.Exists(x)) Directory.Delete(x);
                     if (File.Exists(x)) File.Delete(x);
                 }
-                catch { }
+                catch { continue; }
             }
         }
 
@@ -262,38 +274,44 @@ namespace Optimizer
 
         internal static void PreviewFireFoxClean(bool cache, bool cookies, bool searchHistory)
         {
-            foreach (string x in Directory.EnumerateDirectories(firefoxRoaming))
+            if (Directory.Exists(firefoxRoaming))
             {
-                if (x.ToLowerInvariant().Contains("release"))
+                foreach (string x in Directory.EnumerateDirectories(firefoxRoaming))
                 {
-                    if (cookies)
+                    if (x.ToLowerInvariant().Contains("release"))
                     {
-                        PreviewFolder(Path.Combine(x, "cookies.sqlite"));
-                        PreviewSizeToBeFreed += CalculateSize(Path.Combine(x, "cookies.sqlite"));
-                    }
+                        if (cookies)
+                        {
+                            PreviewFolder(Path.Combine(x, "cookies.sqlite"));
+                            PreviewSizeToBeFreed += CalculateSize(Path.Combine(x, "cookies.sqlite"));
+                        }
 
-                    if (searchHistory)
-                    {
-                        PreviewFolder(Path.Combine(x, "places.sqlite"));
-                        PreviewSizeToBeFreed += CalculateSize(Path.Combine(x, "places.sqlite"));
-                    }
+                        if (searchHistory)
+                        {
+                            PreviewFolder(Path.Combine(x, "places.sqlite"));
+                            PreviewSizeToBeFreed += CalculateSize(Path.Combine(x, "places.sqlite"));
+                        }
 
-                    if (cache)
-                    {
-                        PreviewFolder(Path.Combine(x, "shader-cache"));
-                        PreviewSizeToBeFreed += CalculateSize(Path.Combine(x, "shader-cache"));
+                        if (cache)
+                        {
+                            PreviewFolder(Path.Combine(x, "shader-cache"));
+                            PreviewSizeToBeFreed += CalculateSize(Path.Combine(x, "shader-cache"));
+                        }
                     }
                 }
             }
 
             if (cache)
             {
-                foreach (string x in Directory.EnumerateDirectories(firefoxLocal))
+                if (Directory.Exists(firefoxLocal))
                 {
-                    if (x.ToLowerInvariant().Contains("release"))
+                    foreach (string x in Directory.EnumerateDirectories(firefoxLocal))
                     {
-                        PreviewFolder(Path.Combine(x, "cache2"));
-                        PreviewSizeToBeFreed += CalculateSize(Path.Combine(x, "cache2"));
+                        if (x.ToLowerInvariant().Contains("release"))
+                        {
+                            PreviewFolder(Path.Combine(x, "cache2"));
+                            PreviewSizeToBeFreed += CalculateSize(Path.Combine(x, "cache2"));
+                        }
                     }
                 }
             }

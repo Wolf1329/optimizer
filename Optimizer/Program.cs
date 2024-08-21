@@ -10,28 +10,28 @@ namespace Optimizer
 {
     static class Program
     {
-        /* VERSION PROPERTIES */
-        /* DO NOT LEAVE THEM EMPTY */
-
-        internal readonly static float Major = 14;
-        internal readonly static float Minor = 6;
-
+        /// <summary>
+        /// Version properties. Do NOT leave them empty
+        /// </summary>
+        internal readonly static float Major = 16;
+        internal readonly static float Minor = 7;
         internal readonly static bool EXPERIMENTAL_BUILD = false;
-        internal static int DPI_PREFERENCE;
 
         internal static string GetCurrentVersionTostring()
         {
-            return Major.ToString() + "." + Minor.ToString();
+            return $"{Major.ToString()}.{Minor.ToString()}";
         }
 
-        internal static float GetCurrentVersion()
+        internal static float GetCurrentVersionToFloat()
         {
             return float.Parse(GetCurrentVersionTostring());
         }
 
-        /* END OF VERSION PROPERTIES */
+        internal static bool SILENT_MODE = false;
+        internal static int DPI_PREFERENCE;
 
-        // Enables the corresponding Windows tab for Windows Server machines
+        // Enables the corresponding Windows tab for Windows Server machines,
+        // as well as the Advanced tweaks tab
         internal static bool UNSAFE_MODE = false;
 
         const string _jsonAssembly = @"Optimizer.Newtonsoft.Json.dll";
@@ -42,12 +42,10 @@ namespace Optimizer
         static string _adminMissingMessage = "Optimizer needs to be run as administrator!\nApp will now close...";
         static string _unsupportedMessage = "Optimizer works with Windows 7 and higher!\nApp will now close...";
 
-        //static string _renameAppMessage = "It's recommended to rename the app from '{0}' to 'Optimizer' for a better experience.\n\nApp will now close...";
-
         static string _confInvalidVersionMsg = "Windows version does not match!";
         static string _confInvalidFormatMsg = "Config file is in invalid format!";
         static string _confNotFoundMsg = "Config file does not exist!";
-        static string _argInvalidMsg = "Invalid argument! Example: Optimizer.exe /silent.conf";
+        static string _argInvalidMsg = "Invalid argument! Example: Optimizer.exe /config=win10.json";
         static string _alreadyRunningMsg = "Optimizer is already running in the background!";
 
         const string MUTEX_GUID = @"{DEADMOON-0EFC7B8A-D1FC-467F-B4B1-0117C643FE19-OPTIMIZER}";
@@ -60,342 +58,272 @@ namespace Optimizer
         [STAThread]
         static void Main(string[] switches)
         {
-            EmbeddedAssembly.Load(_jsonAssembly, _jsonAssembly.Replace("Optimizer.", string.Empty));
+            AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
             AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
+            EmbeddedAssembly.Load(_jsonAssembly, _jsonAssembly.Replace("Optimizer.", string.Empty));
 
             DPI_PREFERENCE = Convert.ToInt32(Microsoft.Win32.Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\ThemeManager", "LastLoadedDPI", "96"));
-            if (Environment.OSVersion.Version.Major >= 6) SetProcessDPIAware();
+            if (DPI_PREFERENCE <= 0)
+            {
+                DPI_PREFERENCE = 96;
+            }
 
+            if (Environment.OSVersion.Version.Major >= 6) SetProcessDPIAware();
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
-            // prompt to change filename to 'Optimizer' (skip if experimental build)
-            // annoying?
-
-            //if (!EXPERIMENTAL_BUILD && Path.GetFileNameWithoutExtension(Assembly.GetEntryAssembly().Location) != "Optimizer")
-            //{
-            //    MessageBox.Show(string.Format(_renameAppMessage, Path.GetFileNameWithoutExtension(Assembly.GetEntryAssembly().Location)), "Optimizer", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            //    Environment.Exit(0);
-            //}
-
             // single-instance mechanism
-            using (MUTEX = new Mutex(true, MUTEX_GUID, out _notRunning))
+            MUTEX = new Mutex(true, MUTEX_GUID, out _notRunning);
+
+            if (!_notRunning)
             {
-                if (!_notRunning)
+                MessageBox.Show(_alreadyRunningMsg, "Optimizer", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                Environment.Exit(0);
+                return;
+            }
+
+            if (!Utilities.IsAdmin())
+            {
+                string file = Process.GetCurrentProcess().MainModule.FileName;
+                ProcessStartInfo p = new ProcessStartInfo(file);
+                p.Verb = "runas";
+                p.Arguments = string.Join(" ", switches);
+                Process.Start(p);
+                Environment.Exit(0);
+                return;
+            }
+
+            if (!Utilities.IsCompatible())
+            {
+                HelperForm f = new HelperForm(null, MessageType.Error, _unsupportedMessage);
+                f.ShowDialog();
+                Environment.Exit(0);
+                return;
+            }
+
+            CoreHelper.Deploy();
+            FontHelper.LoadFont();
+
+            if (switches.Length == 1)
+            {
+                string arg = switches[0].Trim().ToLowerInvariant();
+
+                // UNSAFE mode switch (allows running on Windows Server 2008+)
+                if (arg == "/unsafe")
                 {
-                    MessageBox.Show(_alreadyRunningMsg, "Optimizer", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    UNSAFE_MODE = true;
+                    StartMainForm();
+                    return;
+                }
+
+                if (arg == "/repair")
+                {
+                    Utilities.Repair(true);
+                    return;
+                }
+
+                if (arg == "/disablehpet")
+                {
+                    Utilities.DisableHPET();
                     Environment.Exit(0);
+                    return;
                 }
-                else
+                if (arg == "/enablehpet")
                 {
-                    // Restart process with admin rights, preserving arguments
-                    if (!Utilities.IsAdmin())
-                    {
-                        string file = Process.GetCurrentProcess().MainModule.FileName;
-                        ProcessStartInfo p = new ProcessStartInfo(file);
-                        p.Verb = "runas";
-                        p.Arguments = string.Join(" ", switches);
-                        Process.Start(p);
-
-                        Environment.Exit(0);
-                    }
-                    else
-                    {
-                        if (Utilities.IsCompatible())
-                        {
-                            Required.Deploy();
-
-                            FontHelper.LoadFont();
-
-                            for (int z = 0; z < switches.Length; z++) switches[z] = switches[z].ToLowerInvariant();
-
-                            // checking for silent config argument
-                            if (switches.Length == 1)
-                            {
-                                string arg = switches[0].Trim();
-
-                                // UNSAFE mode switch (allows running on Windows Server 2008+)
-                                if (arg == "/unsafe")
-                                {
-                                    UNSAFE_MODE = true;
-
-                                    LoadSettings();
-                                    StartSplashForm();
-
-                                    _MainForm = new MainForm(_SplashForm);
-                                    _MainForm.Load += MainForm_Load;
-                                    Application.Run(_MainForm);
-
-                                    return;
-                                }
-
-                                if (arg == "/disablehpet")
-                                {
-                                    Utilities.DisableHPET();
-                                    Environment.Exit(0);
-                                }
-                                if (arg == "/enablehpet")
-                                {
-                                    Utilities.EnableHPET();
-                                    Environment.Exit(0);
-                                }
-
-                                if (arg == "/addstartup")
-                                {
-                                    Utilities.RegisterAutoStart();
-                                    Environment.Exit(0);
-                                }
-
-                                if (arg == "/deletestartup")
-                                {
-                                    Utilities.UnregisterAutoStart();
-                                    Environment.Exit(0);
-                                }
-
-                                // [!!!] unlock all cores instruction 
-                                if (arg == "/unlockcores")
-                                {
-                                    Utilities.UnlockAllCores();
-                                    Environment.Exit(0);
-                                }
-
-                                // repairs corrupted configuration
-                                if (arg == "/reset")
-                                {
-                                    Utilities.Repair(true);
-                                    return;
-                                }
-
-                                // displays build info
-                                if (arg == "/version")
-                                {
-                                    if (!EXPERIMENTAL_BUILD) MessageBox.Show($"Optimizer: {GetCurrentVersionTostring()}\n\nCoded by: deadmoon © ∞\n\nhttps://github.com/hellzerg/optimizer", "Optimizer", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                                    else MessageBox.Show("Optimizer: EXPERIMENTAL BUILD. PLEASE DELETE AFTER TESTING.\n\nCoded by: deadmoon © ∞\n\nhttps://github.com/hellzerg/optimizer", "Optimizer", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-                                    Environment.Exit(0);
-                                }
-
-                                // hibernation switches
-                                if (arg == "/disablehibernate")
-                                {
-                                    Utilities.DisableHibernation();
-                                    Environment.Exit(0);
-                                }
-                                if (arg == "/enablehibernate")
-                                {
-                                    Utilities.EnableHibernation();
-                                    Environment.Exit(0);
-                                }
-
-                                // instruct to restart in safe-mode
-                                if (arg == "/restart=safemode")
-                                {
-                                    RestartInSafeMode();
-                                }
-
-                                // instruct to restart normally
-                                if (arg == "/restart=normal")
-                                {
-                                    RestartInNormalMode();
-                                }
-
-                                // disable defender automatically
-                                if (arg == "/restart=disabledefender")
-                                {
-                                    // set RunOnce instruction
-                                    Microsoft.Win32.Registry.SetValue(@"HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\RunOnce", "*OptimizerDisableDefender", Assembly.GetExecutingAssembly().Location + " /silentdisabledefender", Microsoft.Win32.RegistryValueKind.String);
-                                    RestartInSafeMode();
-                                }
-
-                                // enable defender automatically
-                                if (arg == "/restart=enabledefender")
-                                {
-                                    // set RunOnce instruction
-                                    Microsoft.Win32.Registry.SetValue(@"HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\RunOnce", "*OptimizerEnableDefender", Assembly.GetExecutingAssembly().Location + " /silentenabledefender", Microsoft.Win32.RegistryValueKind.String);
-                                    RestartInSafeMode();
-                                }
-
-                                // return from safe-mode automatically
-                                if (arg == "/silentdisabledefender")
-                                {
-                                    DisableDefenderInSafeMode();
-                                    RestartInNormalMode();
-                                }
-
-                                if (arg == "/silentenabledefender")
-                                {
-                                    EnableDefenderInSafeMode();
-                                    RestartInNormalMode();
-                                }
-
-                                // other options for disabling specific tools
-                                if (arg.StartsWith("/disable="))
-                                {
-                                    string x = arg.Replace("/disable=", string.Empty);
-                                    string[] opts = x.Split(',');
-
-                                    bool disableIndicium = opts.Contains("indicium");
-                                    bool disableUWPTool = opts.Contains("uwp");
-                                    bool disableAppsTool = opts.Contains("apps");
-                                    bool disableHostsEditor = opts.Contains("hosts");
-                                    bool disableStartupTool = opts.Contains("startup");
-                                    bool disableCleaner = opts.Contains("cleaner");
-                                    bool disableIntegrator = opts.Contains("integrator");
-                                    bool disablePinger = opts.Contains("pinger");
-
-                                    LoadSettings();
-                                    StartSplashForm();
-
-                                    _MainForm = new MainForm(_SplashForm, disableIndicium, disableHostsEditor, disableAppsTool, disableUWPTool, disableStartupTool, disableCleaner, disableIntegrator, disablePinger);
-                                    _MainForm.Load += MainForm_Load;
-                                    Application.Run(_MainForm);
-
-                                    return;
-                                }
-
-                                // disables Defender in SAFE MODE (for Windows 10 1903+ / works in Windows 11 as well)
-                                if (arg == "/disabledefender")
-                                {
-                                    DisableDefenderInSafeMode();
-
-                                    MessageBox.Show("Windows Defender has been completely disabled successfully.", "Optimizer", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                                    Environment.Exit(0);
-                                    return;
-                                }
-
-                                if (arg.StartsWith("/"))
-                                {
-                                    if (File.Exists(arg.Remove(0, 1)))
-                                    {
-                                        SilentOps.GetSilentConfig(arg.Remove(0, 1));
-
-                                        if (SilentOps.CurrentSilentConfig != null)
-                                        { 
-                                            if (SilentOps.CurrentSilentConfig.WindowsVersion == 7 && Utilities.CurrentWindowsVersion == WindowsVersion.Windows7)
-                                            {
-                                                LoadSettings();
-                                                SilentOps.ProcessSilentConfigGeneral();
-                                                SilentOps.SilentUpdateOptionsGeneral();
-                                                Options.SaveSettings();
-                                            }
-                                            else if (SilentOps.CurrentSilentConfig.WindowsVersion == 8 && Utilities.CurrentWindowsVersion == WindowsVersion.Windows8)
-                                            {
-                                                LoadSettings();
-                                                SilentOps.ProcessSilentConfigGeneral();
-                                                SilentOps.ProcessSilentConfigWindows8();
-                                                SilentOps.SilentUpdateOptionsGeneral();
-                                                SilentOps.SilentUpdateOptions8();
-                                                Options.SaveSettings();
-                                            }
-                                            else if (SilentOps.CurrentSilentConfig.WindowsVersion == 10 && Utilities.CurrentWindowsVersion == WindowsVersion.Windows10)
-                                            {
-                                                LoadSettings();
-                                                SilentOps.ProcessSilentConfigGeneral();
-                                                SilentOps.ProcessSilentConfigWindows10();
-                                                SilentOps.SilentUpdateOptionsGeneral();
-                                                SilentOps.SilentUpdateOptions10();
-                                                Options.SaveSettings();
-                                            }
-                                            else if (SilentOps.CurrentSilentConfig.WindowsVersion == 11 && Utilities.CurrentWindowsVersion == WindowsVersion.Windows11)
-                                            {
-                                                LoadSettings();
-                                                SilentOps.ProcessSilentConfigGeneral();
-                                                SilentOps.ProcessSilentConfigWindows10();
-                                                SilentOps.ProcessSilentConfigWindows11();
-                                                SilentOps.SilentUpdateOptionsGeneral();
-                                                SilentOps.SilentUpdateOptions10();
-                                                SilentOps.SilentUpdateOptions11();
-                                                Options.SaveSettings();
-                                            }
-                                            else
-                                            {
-                                                MessageBox.Show(_confInvalidVersionMsg, "Optimizer", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                                                Environment.Exit(0);
-                                            }
-                                        }
-                                        else
-                                        {
-                                            MessageBox.Show(_confInvalidFormatMsg, "Optimizer", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                                            Environment.Exit(0);
-                                        }
-                                    }
-                                    else
-                                    {
-                                        MessageBox.Show(_confNotFoundMsg, "Optimizer", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                                        Environment.Exit(0);
-                                    }
-                                }
-                                else
-                                {
-                                    MessageBox.Show(_argInvalidMsg, "Optimizer", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                                    Environment.Exit(0);
-                                }
-                            }
-                            else
-                            {
-                                LoadSettings();
-                                StartSplashForm();
-
-                                _MainForm = new MainForm(_SplashForm);
-                                _MainForm.Load += MainForm_Load;
-
-                                Application.Run(_MainForm);
-                            }
-                        }
-                        else
-                        {
-                            HelperForm f = new HelperForm(null, MessageType.Error, _unsupportedMessage);
-                            f.ShowDialog();
-
-                            Environment.Exit(0);
-                        }
-                    }
+                    Utilities.EnableHPET();
+                    Environment.Exit(0);
+                    return;
                 }
+
+                // [!!!] unlock all cores instruction 
+                if (arg == "/unlockcores")
+                {
+                    Utilities.UnlockAllCores();
+                    Environment.Exit(0);
+                    return;
+                }
+
+                if (arg.StartsWith("/svchostsplit="))
+                {
+                    string x = arg.Replace("/svchostsplit=", string.Empty);
+                    bool isValid = !x.Any(c => !char.IsDigit(c));
+                    if (isValid && int.TryParse(x, out int result)) Utilities.DisableSvcHostProcessSplitting(result);
+                    Environment.Exit(0);
+                    return;
+                }
+
+                if (arg == "/resetsvchostsplit")
+                {
+                    Utilities.EnableSvcHostProcessSplitting();
+                    Environment.Exit(0);
+                    return;
+                }
+
+                if (arg == "/version")
+                {
+                    if (!EXPERIMENTAL_BUILD) MessageBox.Show($"Optimizer: {GetCurrentVersionTostring()}\n\nCoded by: deadmoon © ∞\n\nhttps://github.com/hellzerg/optimizer", "Optimizer", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    else MessageBox.Show("Optimizer: EXPERIMENTAL BUILD. PLEASE DELETE AFTER TESTING.\n\nCoded by: deadmoon © ∞\n\nhttps://github.com/hellzerg/optimizer", "Optimizer", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                    Environment.Exit(0);
+                    return;
+                }
+                // instruct to restart in safe-mode
+                if (arg == "/restart=safemode")
+                {
+                    RestartInSafeMode();
+                }
+
+                // instruct to restart normally
+                if (arg == "/restart=normal")
+                {
+                    RestartInNormalMode();
+                }
+
+                // disable defender automatically
+                if (arg == "/restart=disabledefender")
+                {
+                    SetRunOnceDisableDefender();
+                }
+
+                // enable defender automatically
+                if (arg == "/restart=enabledefender")
+                {
+                    SetRunOnceEnableDefender();
+                }
+
+                // return from safe-mode automatically
+                if (arg == "/silentdisabledefender")
+                {
+                    DisableDefenderInSafeMode();
+                    RestartInNormalMode();
+                }
+
+                if (arg == "/silentenabledefender")
+                {
+                    EnableDefenderInSafeMode();
+                    RestartInNormalMode();
+                }
+
+                // disables Defender in SAFE MODE (for Windows 10 1903+ / works in Windows 11 as well)
+                if (arg == "/disabledefender")
+                {
+                    DisableDefenderInSafeMode();
+
+                    MessageBox.Show("Windows Defender has been completely disabled successfully.", "Optimizer", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    Environment.Exit(0);
+                    return;
+                }
+
+
+                // other options for disabling specific tools
+                if (arg.StartsWith("/disable="))
+                {
+                    string x = arg.Replace("/disable=", string.Empty);
+                    string[] opts = x.Split(',');
+
+                    bool? o1, o2, o3, o4, o5, o6, o7, o8;
+                    if (opts.Contains(Constants.INDICIUM_TOOL)) o1 = true; else o1 = null;
+                    if (opts.Contains(Constants.UWP_TOOL)) o2 = true; else o2 = null;
+                    if (opts.Contains(Constants.APPS_TOOL)) o3 = true; else o3 = null;
+                    if (opts.Contains(Constants.HOSTS_EDITOR)) o4 = true; else o4 = null;
+                    if (opts.Contains(Constants.STARTUP_TOOL)) o5 = true; else o5 = null;
+                    if (opts.Contains(Constants.CLEANER_TOOL)) o6 = true; else o6 = null;
+                    if (opts.Contains(Constants.INTEGRATOR_TOOL)) o7 = true; else o7 = null;
+                    if (opts.Contains(Constants.PINGER_TOOL)) o8 = true; else o8 = null;
+
+                    StartMainForm(new bool?[] { o1, o2, o3, o4, o5, o6, o7, o8 });
+                    return;
+                }
+
+                if (arg.StartsWith("/config="))
+                {
+                    UNSAFE_MODE = true;
+                    string fileName = arg.Replace("/config=", string.Empty);
+
+                    if (!File.Exists(fileName))
+                    {
+                        MessageBox.Show(_confNotFoundMsg, "Optimizer", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        Environment.Exit(0);
+                        return;
+                    }
+
+                    SilentOps.GetSilentConfig(fileName);
+
+                    if (SilentOps.CurrentSilentConfig == null)
+                    {
+                        MessageBox.Show(_confInvalidFormatMsg, "Optimizer", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        Environment.Exit(0);
+                        return;
+                    }
+                    if (!SilentOps.ProcessWindowsVersionCompatibility())
+                    {
+                        MessageBox.Show(_confInvalidVersionMsg, "Optimizer", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        Environment.Exit(0);
+                        return;
+                    }
+                    SILENT_MODE = true;
+                    LoadSettings();
+                    SilentOps.ProcessAllActions();
+                    OptionsHelper.SaveSettings();
+                }
+            }
+            else
+            {
+                StartMainForm();
             }
         }
 
-        //internal static void ForceExit()
-        //{
-        //    Environment.Exit(0);
-        //}
+        private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            Exception error = (Exception)e.ExceptionObject;
+            Logger.LogError("Program.Main-UnhandledException", error.Message, error.StackTrace);
+        }
 
         private static void LoadSettings()
         {
-            // for backward compatibility (legacy)
-            Options.LegacyCheck();
+            // for backward compatibility
+            OptionsHelper.LegacyCheck();
 
             // load settings, if there is no settings, load defaults
             try
             {
                 // show FirstRunForm/Language Selector if app is running first time
-                if (!File.Exists(Options.SettingsFile))
+                if (!File.Exists(OptionsHelper.SettingsFile))
                 {
-                    Options.LoadSettings();
-                    FirstRunForm frf = new FirstRunForm();
-                    frf.ShowDialog();
+                    OptionsHelper.LoadSettings();
+                    if (!SILENT_MODE)
+                    {
+                        FirstRunForm frf = new FirstRunForm();
+                        frf.ShowDialog();
+                    }
                 }
                 else
                 {
-                    Options.LoadSettings();
+                    OptionsHelper.LoadSettings();
                 }
 
+                //if (!Options.CurrentOptions.DisableOptimizerTelemetry)
+                //{
+                //    TelemetryHelper.EnableTelemetryService();
+                //}
+
                 // ideal place to replace internal messages from translation list
-                _adminMissingMessage = Options.TranslationList["adminMissingMsg"];
-                _unsupportedMessage = Options.TranslationList["unsupportedMsg"];
-                _confInvalidFormatMsg = Options.TranslationList["confInvalidFormatMsg"];
-                _confInvalidVersionMsg = Options.TranslationList["confInvalidVersionMsg"];
-                _confNotFoundMsg = Options.TranslationList["confNotFoundMsg"];
-                _argInvalidMsg = Options.TranslationList["argInvalidMsg"];
-                _alreadyRunningMsg = Options.TranslationList["alreadyRunningMsg"];
+                _adminMissingMessage = OptionsHelper.TranslationList["adminMissingMsg"];
+                _unsupportedMessage = OptionsHelper.TranslationList["unsupportedMsg"];
+                _confInvalidFormatMsg = OptionsHelper.TranslationList["confInvalidFormatMsg"];
+                _confInvalidVersionMsg = OptionsHelper.TranslationList["confInvalidVersionMsg"];
+                _confNotFoundMsg = OptionsHelper.TranslationList["confNotFoundMsg"];
+                _argInvalidMsg = OptionsHelper.TranslationList["argInvalidMsg"];
+                _alreadyRunningMsg = OptionsHelper.TranslationList["alreadyRunningMsg"];
             }
             catch (Exception ex)
             {
-                ErrorLogger.LogError("Program.Main", ex.Message, ex.StackTrace);
+                Logger.LogError("Program.Main-LoadSettings", ex.Message, ex.StackTrace);
                 Environment.Exit(0);
             }
         }
 
-        private static void RestartInSafeMode()
+        internal static void RestartInSafeMode()
         {
             Utilities.RunCommand("bcdedit /set {current} safeboot Minimal");
             Thread.Sleep(500);
@@ -404,7 +332,7 @@ namespace Optimizer
             Environment.Exit(0);
         }
 
-        private static void RestartInNormalMode()
+        internal static void RestartInNormalMode()
         {
             Utilities.RunCommand("bcdedit /deletevalue {current} safeboot");
             Thread.Sleep(500);
@@ -435,6 +363,40 @@ namespace Optimizer
             Thread.Sleep(1000);
 
             File.Delete("EnableDefenderSafeMode.bat");
+        }
+
+        internal static void SetRunOnceDisableDefender()
+        {
+            // set RunOnce instruction
+            Microsoft.Win32.Registry.SetValue(@"HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\RunOnce", "*OptimizerDisableDefender", Assembly.GetExecutingAssembly().Location + " /silentdisabledefender", Microsoft.Win32.RegistryValueKind.String);
+            RestartInSafeMode();
+        }
+
+        internal static void SetRunOnceEnableDefender()
+        {
+            // set RunOnce instruction
+            Microsoft.Win32.Registry.SetValue(@"HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\RunOnce", "*OptimizerEnableDefender", Assembly.GetExecutingAssembly().Location + " /silentenabledefender", Microsoft.Win32.RegistryValueKind.String);
+            RestartInSafeMode();
+        }
+
+        private static void StartMainForm()
+        {
+            LoadSettings();
+            StartSplashForm();
+
+            _MainForm = new MainForm(_SplashForm);
+            _MainForm.Load += MainForm_Load;
+            Application.Run(_MainForm);
+        }
+
+        private static void StartMainForm(bool?[] codes)
+        {
+            LoadSettings();
+            StartSplashForm();
+
+            _MainForm = new MainForm(_SplashForm, codes[0], codes[3], codes[2], codes[1], codes[4], codes[5], codes[6], codes[7]);
+            _MainForm.Load += MainForm_Load;
+            Application.Run(_MainForm);
         }
 
         private static void StartSplashForm()

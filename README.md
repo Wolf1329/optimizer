@@ -1,129 +1,171 @@
 <p align="center">
    <img src="https://raw.githubusercontent.com/hellzerg/optimizer/master/banner.png">
-</p> 
+</p>
 
 <p align="center">
-	<a href="https://github.com/hellzerg/optimizer/releases/download/14.6/Optimizer-14.6.exe" target="_blank">
+	<a href="https://github.com/hellzerg/optimizer/releases/download/16.7/Optimizer-16.7.exe" target="_blank">
 		<img src="https://raw.githubusercontent.com/hellzerg/optimizer/master/download-button.png">
 		<br>
 		<img src="https://raw.githubusercontent.com/hellzerg/optimizer/master/flags.png">
 	</a>
-</p> 
+</p>
 
-### ℹ️ Summary: ###
+<center>
+<h2>ℹ️ Advanced Privacy and Security Configuration Utility</h2> 
+</center>
 
-Advanced configuration utility that helps you restore your privacy and increase your security.<br>
-Optimizer is recommended after a fresh, clean installation of Windows to achieve maximum privacy and security.<br>
-Depending on your version of Windows, Optimizer will also allow you to perform some specific tweaks.
+Welcome to Optimizer, an advanced configuration utility designed to enhance your privacy and security on Windows. This tool is highly recommended for use after a fresh installation of Windows to achieve maximum privacy and security benefits. Depending on your Windows version, Optimizer can also help you apply specific system tweaks.
 
-* Full multilingual support (20 languages available)
-* Speed up your system and network performance
-* Disable unnecessary Windows services
-* Disable Windows telemetry, Cortana and many more
-* Disable Office telemetry (works only with Office 2016)
-* Disable Windows 10 automatic updates
-* Download useful apps quickly at once
-* Uninstall UWP apps
-* Clean your system drive and major browsers' profile data
-* Fix common registry issues
-* Ping IPs and assess your latency
-* Search IPs on SHODAN.io
-* Rapidly change DNS server (from a pre-made list)
-* Flush DNS cache
-* Remove unwanted programs running at startup
-* Edit your HOSTS file
-* Find file lock handles and kill associated processes
-* Hardware inspection tool
-* Add items in desktop on right-click menu
-* Define custom commands for run dialog
-* Silent run support using a configuration file
+<center>
+<h2> 🏗️ Key Features:</h2> 
+</center>
 
-<hr>
+- Full multilingual support (24 languages available)
+- Enhance system and network performance
+- Disable unnecessary Windows services
+- Turn off Windows telemetry, Cortana, and more
+- Disable Office telemetry (works with Office 2016 or newer)
+- Stop automatic Windows 10/11 updates
+- Download multiple useful apps quickly
+- Disable CoPilot AI in Windows 11 & Edge
+- Enable UTC time globally
+- Advanced tweaks like disabling HPET, OneDrive, etc.
+- Uninstall UWP apps
+- Clean system drive and browser profiles
+- Fix common registry issues
+- Ping IPs and assess latency
+- Search IPs on SHODAN.io
+- Quickly change DNS server (from a pre-made list)
+- Flush DNS cache
+- Remove unwanted startup programs
+- Edit your HOSTS file
+- Edit your System Variables paths
+- Identify and terminate file lock handles
+- Hardware inspection tool
+- Add items to the desktop right-click menu
+- Define custom commands for the run dialog
+- Support silent runs using a template file
 
-### ⬇️ Downloads: ###
-https://github.com/hellzerg/optimizer/releases
+<center>
+<h2> ⬇️ Downloads</h2> 
+</center>
 
-<hr>
+Find the latest release of Optimizer on the [Releases](https://github.com/hellzerg/optimizer/releases) page.
 
-### 🖼️ Screenshots: ###
-https://github.com/hellzerg/optimizer/blob/master/IMAGES.md
+<center>
+<h2>🖼️ Screenshots</h2> 
+</center>
 
-<hr>
+View Optimizer in action through our [Screenshots](https://github.com/hellzerg/optimizer/blob/master/IMAGES.md) collection.
 
-### 🆘 How to effectively disable Defender in Windows 10 1903 and later ###
-Restart in SAFE-MODE and run Optimizer with ```/disabledefender``` switch
-<br>-OR-<br>
-Execute Optimizer with ```/restart=disabledefender``` switch and let it do the rest automatically
+<center>
+<h2> 🆘 How to Disable Defender in Windows 10 1903 and Later</h2> 
+</center>
 
-<hr>
+- Restart in SAFE-MODE and run Optimizer with `/disabledefender` switch
+- OR -
+- Execute Optimizer with `/restart=disabledefender` switch for automated disabling
 
-### 🔨 Command-line options and silent configuration files: ###
-https://github.com/hellzerg/optimizer/blob/master/CONFS.md
+<center>
+<h2>🔨 Automation using Templating</h2> 
+</center>
 
-<hr>
+Explore the possibilities of automation with Optimizer through our [Automation Guide](https://github.com/hellzerg/optimizer/blob/master/AUTOMATION.md).
 
-### ❓ Frequently asked questions section: ###
-https://github.com/hellzerg/optimizer/blob/master/FAQ.md
+<center>
+<h2> 🔨 Command-line Options</h2> 
+</center>
 
-<hr>
+Check out the [Command-line Options](https://github.com/hellzerg/optimizer/blob/master/CONFS.md) available for Optimizer.
 
-### 📜 Changelog: ###
-https://github.com/hellzerg/optimizer/blob/master/CHANGELOG.md
+<center>
+<h2> ❓ Frequently Asked Questions</h2> 
+</center>
 
-<hr>
+Find answers to common queries in the [FAQ Section](https://github.com/hellzerg/optimizer/blob/master/FAQ.md).
 
-### 🖼️ Early development images: ###
-https://github.com/hellzerg/optimizer/blob/master/LEGACY.md
+<center>
+<h2> 📰 Changelog</h2> 
+</center>
 
-<hr>
+Stay updated with the latest changes through the [Changelog](https://github.com/hellzerg/optimizer/blob/master/CHANGELOG.md).
 
-### 💻 Compatibility: ###
+<center>
+<h2>🛡️ Security Policy</h2> 
+</center>
 
-* .NET Framework 4.5.2
-* Compatible with Windows 7, 8, 8.1, 10, 11
-* Can run under Windows Server 2008, 2012, 2016, 2019, 2022 using ```/unsafe``` switch
+Learn about our security measures in the [Security Policy](https://github.com/hellzerg/optimizer/blob/master/SECURITY.md).
 
-<hr>
+<center>
+<h2> 💻 Compatibility</h2> 
+</center>
 
-### #️ Details: ###
+- Requires .NET Framework 4.8.1
+- Compatible with Windows 7, 8, 8.1, 10, 11
+- Can run on Windows Server 2008, 2012, 2016, 2019, 2022 using `/unsafe` switch
 
-* Latest version: 14.6
-* Released: December 17, 2022
-* SHA256: 38717DE36E9705D8B95EFE7D752982134BF8CCC398BF7369F205FA9329E0276B
+<center>
+<h2> 📊 Details</h2> 
+</center>
 
-<hr>
+- Latest version: 16.7 (Released: August 18, 2024)
+- SHA256: 03A234060541B686AC4265754AFF43DF9325C21383F90E17F831E67965D717F8
 
-### ☕ Buy me a delicious espresso ###
-Support my hard work by donating me through [PayPal](https://www.paypal.com/paypalme/supportoptimizer)
+<center>
+<h2> ☕ Buy me a delicious espresso</h2>
+</center>
 
-<hr>
+If you find this tool useful, consider showing your support by [donating through PayPal](https://www.paypal.com/paypalme/supportoptimizer).
 
-### 🌐 Join our [Discord](https://discord.gg/rZh8BhmmQv) community
+<center>
+<h2> 🌐 Join our Community</h2>
+</center>
 
-<hr>
+Be a part of our [Discord](https://discord.gg/RmHYWMxWfJ) community.
 
-### ❤️ Tools used: ###
-* [ByteSize](https://github.com/omar/ByteSize) | Thanks for this really tiny, yet extremely useful library
-* ColorPicker | Thanks to cat - https://github.com/vadiscode for the new theme engine
+<center>
+<h2> ❤️ Credits and Acknowledgments</h2>
+</center>
 
-<hr>
+- [ByteSize](https://github.com/omar/ByteSize) - A useful library by Omar Rahman
+- ColorPicker - Theme engine, courtesy of cat ([GitHub Profile](https://github.com/vadiscode))
 
-### ❤️ Credits for translating: ###
-* https://github.com/mrkaban - mrkaban for Russian translation
-* https://github.com/theflamehd - theflamehd for German translation
-* https://github.com/Kheasyque - Kheasyque for Turkish translation
-* https://github.com/danielcshn - danielcshn for Spanish translation
-* https://github.com/cassiompf - Cassio for Portuguese translation
-* https://github.com/RAFF47 - RAFF for French translation
-* https://github.com/Ziocash - Ziocash for Italian translation
-* https://github.com/btwise - btwise for Chinese translation
-* https://github.com/tomlonghorn - Tom Longhorn for Czech translation
-* https://github.com/H3XDaemon - H3XDaemon for Taiwanese translation
-* https://github.com/VenusGirl - VenusGirl for Korean translation
-* https://github.com/Wilamaxin - Wilamaxin for Polish translation
-* https://github.com/MesterPerfect - MesterPerfect for Arabic translation
-* https://github.com/BeamingNG - BeamingNG for Romanian translation
-* https://github.com/svanlaere - svanlaere for Dutch translation
-* https://github.com/kirill0ermakov - Kirill Ermakov for Ukrainian translation
-* Parwar Andam for Kurdish translation
-* Zan for Hungarian translation
+<center>
+<h2> ❤️ Translations</h2>
+</center>
+
+We'd like to extend our gratitude to the following contributors for their translations:
+
+- Russian: mrkaban
+- German: theflamehd
+- Turkish: Kheasyque
+- Spanish: danielcshn
+- Portuguese: Cassio
+- French: RAFF47
+- Italian: Ziocash
+- Chinese: btwise
+- Czech: Tom Longhorn
+- Taiwanese: H3XDaemon
+- Korean: VenusGirl
+- Polish: Wilamaxin
+- Arabic: MesterPerfect
+- Romanian: BeamingNG, DefaultUser9148
+- Dutch: svanlaere
+- Ukrainian: Kirill Ermakov
+- Japanese: Yamada Hayao, creeper-0910
+- Kurdish: Parwar Andam
+- Hungarian: Zan
+- Farsi: MjavadH
+- Nepali: chapagetti
+- Hellenic
+- Bulgarian
+- Indonesian: ftrsndrya
+- Croatian: zZan54
+
+<center>
+<h2> ❤️ Contribute with a translation</h2>
+</center>
+
+If you would like to translate the app into your language, you can do so, by translating the EN.json and making a PR.
+Don't forget to mention your language's official name, as well as its national flag.
+- [EN.json](https://github.com/hellzerg/optimizer/blob/master/Optimizer/Resources/i18n/EN.json)

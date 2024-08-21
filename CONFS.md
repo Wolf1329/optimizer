@@ -47,44 +47,19 @@
 - ```optimizer.exe /disable=indicium,uwp```
 - ```optimizer.exe /disable=indicium,uwp,hosts```
 
+## Disable or Reset svchost process splitting mechanism ##
+### Reduces the amount of svchost processes running, improving RAM usage ###
+### To disable it, you need to provide your amount of RAM using this command (example for 8GB RAM): ###
+
+```optimizer.exe /svchostsplit=8```
+
+#### Reset the mechanism to its default configuration using: ####
+```optimizer.exe /resetsvchostsplit```
+
 ## Reset Optimizer configuration might fix it when can't open ##
-```optimizer.exe /reset```
-
-## How to disable/enable Windows Hibernate function from command-line ##
-
-- ```optimizer.exe /disablehibernate```
-- ```optimizer.exe /enablehibernate```
-
-## How to add or delete Optimizer from Windows startup ##
-
-- ```optimizer.exe /addstartup```
-- ```optimizer.exe /deletestartup```
+```optimizer.exe /repair```
 
 ## How to disable/enable HPET (High Precision Event Timer) in order to gain a boost when gaming [use at your own risk!] ##
 
 - ```optimizer.exe /disablehpet```
 - ```optimizer.exe /enablehpet```
-
-## You can execute Optimizer silently, applying tweaks according to a configuration file. ##
-
-Download the configuration file based on your Windows version and edit it accordingly.
-
-* ```true```: applies the specific option
-* ```false```: resets the specific option
-* ```null```: ignores the specific option
-
-Then, execute it like this: ```optimizer.exe /win10.conf```
-
-### For Windows 7: ###
-https://github.com/hellzerg/optimizer/blob/master/confs/win7.conf
-
-### For Windows 8/8.1: ###
-https://github.com/hellzerg/optimizer/blob/master/confs/win8.conf
-
-### For Windows 10: ###
-https://github.com/hellzerg/optimizer/blob/master/confs/win10.conf
-
-### For Windows 11: ###
-https://github.com/hellzerg/optimizer/blob/master/confs/win11.conf
-
-

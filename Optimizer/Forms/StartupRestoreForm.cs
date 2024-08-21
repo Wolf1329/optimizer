@@ -17,17 +17,17 @@ namespace Optimizer
             InitializeComponent();
 
             CheckForIllegalCrossThreadCalls = false;
-            Options.ApplyTheme(this);
+            OptionsHelper.ApplyTheme(this);
 
             // translate UI elements
-            if (Options.CurrentOptions.LanguageCode != LanguageCode.EN) Translate();
+            if (OptionsHelper.CurrentOptions.LanguageCode != LanguageCode.EN) Translate();
 
             RefreshBackups();
         }
 
         private void RefreshBackups()
         {
-            _backups = Directory.GetFiles(Required.StartupItemsBackupFolder, "*.json");
+            _backups = Directory.GetFiles(CoreHelper.StartupItemsBackupFolder, "*.json");
             Array.Reverse(_backups);
             listRestoreItems.Items.Clear();
 
@@ -38,14 +38,14 @@ namespace Optimizer
                 listRestoreItems.Items.Add(Path.GetFileNameWithoutExtension(x));
             }
 
-            if (_backups.Count() > 0) listRestoreItems.SelectedIndex = 0;
+            if (_backups.Any()) listRestoreItems.SelectedIndex = 0;
         }
 
         private void Translate()
         {
-            this.Text = Options.TranslationList["StartupRestoreForm"];
+            this.Text = OptionsHelper.TranslationList["StartupRestoreForm"];
 
-            Dictionary<string, string> translationList = Options.TranslationList.ToObject<Dictionary<string, string>>();
+            Dictionary<string, string> translationList = OptionsHelper.TranslationList.ToObject<Dictionary<string, string>>();
 
             Control element;
 
@@ -78,7 +78,7 @@ namespace Optimizer
                     }
                     catch (Exception ex)
                     {
-                        ErrorLogger.LogError("StartupRestoreForm.DeleteStartupBackup", ex.Message, ex.StackTrace);
+                        Logger.LogError("StartupRestoreForm.DeleteStartupBackup", ex.Message, ex.StackTrace);
                     }
 
                     RefreshBackups();
@@ -90,7 +90,7 @@ namespace Optimizer
         {
             if (listRestoreItems.SelectedIndex > -1)
             {
-                List<StartupBackupItem> backup = JsonConvert.DeserializeObject<List<StartupBackupItem>>(File.ReadAllText(_backups[listRestoreItems.SelectedIndex]));
+                List<BackupStartupItem> backup = JsonConvert.DeserializeObject<List<BackupStartupItem>>(File.ReadAllText(_backups[listRestoreItems.SelectedIndex]));
                 StartupPreviewForm f = new StartupPreviewForm(backup);
                 f.ShowDialog(this);
             }
@@ -111,12 +111,12 @@ namespace Optimizer
         {
             if (listRestoreItems.SelectedIndex > -1)
             {
-                List<StartupBackupItem> backup = JsonConvert.DeserializeObject<List<StartupBackupItem>>(File.ReadAllText(_backups[listRestoreItems.SelectedIndex]));
+                List<BackupStartupItem> backup = JsonConvert.DeserializeObject<List<BackupStartupItem>>(File.ReadAllText(_backups[listRestoreItems.SelectedIndex]));
 
                 string keyPath = string.Empty;
                 RegistryKey hive = null;
 
-                foreach (StartupBackupItem x in backup)
+                foreach (BackupStartupItem x in backup)
                 {
                     if (x.RegistryLocation == StartupItemLocation.HKLM.ToString())
                     {
@@ -168,7 +168,7 @@ namespace Optimizer
                         }
                         catch (Exception ex)
                         {
-                            ErrorLogger.LogError("StartupRestoreForm.RestoreStartupBackup", ex.Message, ex.StackTrace);
+                            Logger.LogError("StartupRestoreForm.RestoreStartupBackup", ex.Message, ex.StackTrace);
                         }
                     }
                 }

@@ -38,6 +38,7 @@ namespace Optimizer
             // Label
             // 
             this.Label.AutoSize = true;
+            this.Label.Cursor = System.Windows.Forms.Cursors.Hand;
             this.Label.Location = new System.Drawing.Point(52, 1);
             this.Label.Name = "Label";
             this.Label.Size = new System.Drawing.Size(45, 19);
@@ -89,7 +90,7 @@ namespace Optimizer
 
         #endregion
         private System.Windows.Forms.Panel Panel;
-        protected internal System.Windows.Forms.Label Label;
-        protected internal MoonToggle Toggle;
+        internal System.Windows.Forms.Label Label;
+        internal MoonToggle Toggle;
     }
 }

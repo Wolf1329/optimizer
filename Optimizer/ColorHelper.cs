@@ -137,8 +137,7 @@ namespace Optimizer
         #region Public Constructors
 
         public HslColor(double h, double s, double l)
-            : this(255, h, s, l)
-        { }
+            : this(255, h, s, l) { }
 
         public HslColor(int a, double h, double s, double l)
         {

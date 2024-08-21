@@ -9,6 +9,19 @@ namespace Optimizer
 {
     internal static class PingerHelper
     {
+        internal static string[] DNSOptions =
+        {
+            "Automatic",
+            "Cloudflare",
+            "OpenDNS",
+            "Quad9",
+            "Google",
+            "AlternateDNS",
+            "Adguard",
+            "CleanBrowsing",
+            "CleanBrowsing (adult filter)"
+        };
+
         internal static string[] GoogleDNSv4 = { "8.8.8.8", "8.8.4.4" };
         internal static string[] GoogleDNSv6 = { "2001:4860:4860::8888", "2001:4860:4860::8844" };
 
@@ -53,7 +66,7 @@ namespace Optimizer
             }
             catch (Exception ex)
             {
-                ErrorLogger.LogError("PingerHelper.GetActiveNetworkAdapters", ex.Message, ex.StackTrace);
+                Logger.LogError("PingerHelper.GetActiveNetworkAdapters", ex.Message, ex.StackTrace);
                 return null;
             }
 
@@ -68,18 +81,28 @@ namespace Optimizer
             }
             catch (Exception ex)
             {
-                ErrorLogger.LogError("PingerHelper.GetDNSFromNetworkAdapter", ex.Message, ex.StackTrace);
+                Logger.LogError("PingerHelper.GetDNSFromNetworkAdapter", ex.Message, ex.StackTrace);
                 return null;
             }
         }
 
         internal static void SetDNS(string nic, string[] dnsv4, string[] dnsv6)
         {
+            string cmdv4Alternate = string.Empty;
+            string cmdv6Alternate = string.Empty;
+
             string cmdv4Primary = $"netsh interface ipv4 set dnsservers {nic} static {dnsv4[0]} primary";
-            string cmdv4Alternate = $"netsh interface ipv4 add dnsservers {nic} {dnsv4[1]} index=2";
+            if (dnsv4.Length == 2)
+            {
+                cmdv4Alternate = $"netsh interface ipv4 add dnsservers {nic} {dnsv4[1]} index=2";
+            }
 
             string cmdv6Primary = $"netsh interface ipv6 set dnsservers {nic} static {dnsv6[0]} primary";
-            string cmdv6Alternate = $"netsh interface ipv6 add dnsservers {nic} {dnsv6[1]} index=2";
+            if (dnsv6.Length == 2)
+            {
+                cmdv6Alternate = $"netsh interface ipv6 add dnsservers {nic} {dnsv6[1]} index=2";
+            }
+
 
             Utilities.RunCommand(cmdv4Primary);
             Utilities.RunCommand(cmdv4Alternate);
@@ -94,6 +117,22 @@ namespace Optimizer
 
             Utilities.RunCommand(cmdv4);
             Utilities.RunCommand(cmdv6);
+        }
+
+        internal static void ResetDefaultDNSForAllNICs()
+        {
+            foreach (string nic in NetworkAdapters.Select(x => x.Name))
+            {
+                ResetDefaultDNS(nic);
+            }
+        }
+
+        internal static void SetDNSForAllNICs(string[] dnsv4, string[] dnsv6)
+        {
+            foreach (string nic in NetworkAdapters.Select(x => x.Name))
+            {
+                SetDNS(nic, dnsv4, dnsv6);
+            }
         }
 
         internal static PingReply PingHost(string nameOrAddress)
@@ -112,10 +151,11 @@ namespace Optimizer
             }
         }
 
+        // It uses the InternalDNS setting for this
         internal static bool IsInternetAvailable()
         {
             const int timeout = 1000;
-            const string host = "1.1.1.1";
+            string host = OptionsHelper.CurrentOptions.InternalDNS ?? Constants.INTERNAL_DNS;
 
             var ping = new Ping();
             var buffer = new byte[32];

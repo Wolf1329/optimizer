@@ -8,105 +8,24 @@ using System.Windows.Forms;
 
 namespace Optimizer
 {
-    [Serializable]
-    public sealed class SettingsJson
+    internal static class OptionsHelper
     {
-        public Color Theme { get; set; }
-        public string AppsFolder { get; set; }
-        public bool EnableTray { get; set; }
-        public bool AutoStart { get; set; }
-
-        public LanguageCode LanguageCode { get; set; }
-
-        // universal
-        public bool EnablePerformanceTweaks { get; set; }
-        public bool DisableNetworkThrottling { get; set; }
-        public bool DisableWindowsDefender { get; set; }
-        public bool DisableSystemRestore { get; set; }
-        public bool DisablePrintService { get; set; }
-        public bool DisableMediaPlayerSharing { get; set; }
-        public bool DisableErrorReporting { get; set; }
-        public bool DisableHomeGroup { get; set; }
-        public bool DisableSuperfetch { get; set; }
-        public bool DisableTelemetryTasks { get; set; }
-        public bool DisableCompatibilityAssistant { get; set; }
-        public bool DisableFaxService { get; set; }
-        public bool DisableSmartScreen { get; set; }
-        public bool DisableCloudClipboard { get; set; }
-        public bool DisableStickyKeys { get; set; }
-        public bool DisableHibernation { get; set; }
-        public bool DisableSMB1 { get; set; }
-        public bool DisableSMB2 { get; set; }
-        public bool DisableNTFSTimeStamp { get; set; }
-        public bool DisableSearch { get; set; }
-
-        // apps telemetry
-        public bool DisableOffice2016Telemetry { get; set; }
-        public bool DisableVisualStudioTelemetry { get; set; }
-        public bool DisableFirefoxTemeletry { get; set; }
-        public bool DisableChromeTelemetry { get; set; }
-        public bool DisableNVIDIATelemetry { get; set; }
-
-        // windows 8
-        public bool DisableOneDrive { get; set; }
-
-        // windows 10
-        public bool EnableLegacyVolumeSlider { get; set; }
-        public bool DisableQuickAccessHistory { get; set; }
-        public bool DisableStartMenuAds { get; set; }
-        public bool UninstallOneDrive { get; set; }
-        public bool DisableMyPeople { get; set; }
-        public bool DisableAutomaticUpdates { get; set; }
-        public bool ExcludeDrivers { get; set; }
-        public bool DisableTelemetryServices { get; set; }
-        public bool DisablePrivacyOptions { get; set; }
-        public bool DisableCortana { get; set; }
-        public bool DisableSensorServices { get; set; }
-        public bool DisableWindowsInk { get; set; }
-        public bool DisableSpellingTyping { get; set; }
-        public bool DisableXboxLive { get; set; }
-        public bool DisableGameBar { get; set; }
-        public bool DisableInsiderService { get; set; }
-        public bool DisableStoreUpdates { get; set; }
-        public bool EnableLongPaths { get; set; }
-        public bool RemoveCastToDevice { get; set; }
-        public bool EnableGamingMode { get; set; }
-
-        // windows 11
-        public bool TaskbarToLeft { get; set; }
-        public bool DisableSnapAssist { get; set; }
-        public bool DisableWidgets { get; set; }
-        public bool DisableChat { get; set; }
-        public bool TaskbarSmaller { get; set; }
-        public bool ClassicRibbon { get; set; }
-        public bool ClassicMenu { get; set; }
-        public bool DisableTPMCheck { get; set; }
-        public bool CompactMode { get; set; }
-        public bool DisableStickers { get; set; }
-        public bool DisableVBS { get; set; }
-    }
-
-    internal static class Options
-    {
-        const int CONTRAST_THRESHOLD = 149;
-
         internal static Color ForegroundColor = Color.FromArgb(153, 102, 204);
         internal static Color ForegroundAccentColor = Color.FromArgb(134, 89, 179);
         internal static Color BackgroundColor = Color.FromArgb(10, 10, 10);
         internal static Color BackAccentColor = Color.FromArgb(40, 40, 40);
         internal static Color TextColor;
 
-        readonly static string _themeFlag = "themeable";
-        internal readonly static string SettingsFile = Required.CoreFolder + "\\Optimizer.json";
+        internal readonly static string SettingsFile = CoreHelper.CoreFolder + "\\Optimizer.json";
 
-        internal static SettingsJson CurrentOptions = new SettingsJson();
+        internal static Options CurrentOptions = new Options();
 
         internal static dynamic TranslationList;
 
         internal static Color GetContrastColor(Color c)
         {
             double brightness = c.R * 0.299 + c.G * 0.587 + c.B * 0.114;
-            return brightness > CONTRAST_THRESHOLD ? Color.Black : Color.White;
+            return brightness > Constants.CONTRAST_THRESHOLD ? Color.Black : Color.White;
         }
 
         internal static void ApplyTheme(Form f)
@@ -137,7 +56,7 @@ namespace Optimizer
 
                 if (x is LinkLabel)
                 {
-                    if ((string)c.Tag == _themeFlag)
+                    if ((string)c.Tag == Constants.THEME_FLAG)
                     {
                         c.LinkColor = c1;
                         c.VisitedLinkColor = c1;
@@ -147,7 +66,7 @@ namespace Optimizer
 
                 if (x is CheckBox || x is RadioButton || x is Label)
                 {
-                    if ((string)c.Tag == _themeFlag)
+                    if ((string)c.Tag == Constants.THEME_FLAG)
                     {
                         c.ForeColor = c1;
                     }
@@ -199,7 +118,7 @@ namespace Optimizer
                 // settings migration for new color picker
                 if (File.Exists(SettingsFile) && File.ReadAllText(SettingsFile).Contains("\"Color\":"))
                 {
-                    SettingsJson tmpJson = JsonConvert.DeserializeObject<SettingsJson>(File.ReadAllText(SettingsFile));
+                    Options tmpJson = JsonConvert.DeserializeObject<Options>(File.ReadAllText(SettingsFile));
                     tmpJson.Theme = Color.FromArgb(153, 102, 204);
                     CurrentOptions = tmpJson;
                 }
@@ -207,10 +126,23 @@ namespace Optimizer
                 {
                     // DEFAULT OPTIONS
                     CurrentOptions.Theme = Color.FromArgb(153, 102, 204);
-                    CurrentOptions.AppsFolder = Path.Combine(Application.StartupPath, "Optimizer Downloads");
-                    Directory.CreateDirectory(Options.CurrentOptions.AppsFolder);
+                    CurrentOptions.AppsFolder = string.Empty;
                     CurrentOptions.EnableTray = false;
                     CurrentOptions.AutoStart = false;
+                    CurrentOptions.InternalDNS = Constants.INTERNAL_DNS;
+                    CurrentOptions.UpdateOnLaunch = true;
+
+                    CurrentOptions.DisableIndicium = false;
+                    CurrentOptions.DisableAppsTool = false;
+                    CurrentOptions.DisableHostsEditor = false;
+                    CurrentOptions.DisableUWPApps = false;
+                    CurrentOptions.DisableStartupTool = false;
+                    CurrentOptions.DisableCleaner = false;
+                    CurrentOptions.DisableIntegrator = false;
+                    CurrentOptions.DisablePinger = false;
+
+                    //CurrentOptions.TelemetryClientID = Guid.NewGuid().ToString().ToUpperInvariant();
+                    //CurrentOptions.DisableOptimizerTelemetry = false;
 
                     CurrentOptions.LanguageCode = LanguageCode.EN;
 
@@ -255,11 +187,15 @@ namespace Optimizer
                     CurrentOptions.DisableSMB2 = false;
                     CurrentOptions.DisableNTFSTimeStamp = false;
                     CurrentOptions.DisableSearch = false;
+                    CurrentOptions.RestoreClassicPhotoViewer = false;
 
                     CurrentOptions.DisableVisualStudioTelemetry = false;
                     CurrentOptions.DisableFirefoxTemeletry = false;
                     CurrentOptions.DisableChromeTelemetry = false;
                     CurrentOptions.DisableNVIDIATelemetry = false;
+
+                    CurrentOptions.DisableEdgeDiscoverBar = false;
+                    CurrentOptions.DisableEdgeTelemetry = false;
 
                     CurrentOptions.DisableOneDrive = false;
 
@@ -267,13 +203,24 @@ namespace Optimizer
                     CurrentOptions.DisableSnapAssist = false;
                     CurrentOptions.DisableWidgets = false;
                     CurrentOptions.DisableChat = false;
-                    CurrentOptions.TaskbarSmaller = false;
-                    CurrentOptions.ClassicRibbon = false;
                     CurrentOptions.ClassicMenu = false;
                     CurrentOptions.DisableTPMCheck = false;
                     CurrentOptions.CompactMode = false;
                     CurrentOptions.DisableStickers = false;
                     CurrentOptions.DisableVBS = false;
+                    CurrentOptions.DisableCoPilotAI = false;
+
+                    CurrentOptions.DisableHPET = false;
+                    CurrentOptions.EnableRegistryBackups = false;
+                    CurrentOptions.EnableLoginVerbose = false;
+
+                    CurrentOptions.RemoveMenusDelay = false;
+                    CurrentOptions.ShowAllTrayIcons = false;
+                    CurrentOptions.DisableModernStandby = false;
+                    CurrentOptions.EnableUtcTime = false;
+                    CurrentOptions.DisableNewsInterests = false;
+                    CurrentOptions.HideTaskbarSearch = false;
+                    CurrentOptions.HideTaskbarWeather = false;
 
                     using (FileStream fs = File.Open(SettingsFile, FileMode.CreateNew))
                     using (StreamWriter sw = new StreamWriter(fs))
@@ -288,13 +235,20 @@ namespace Optimizer
             }
             else
             {
-                CurrentOptions = JsonConvert.DeserializeObject<SettingsJson>(File.ReadAllText(SettingsFile));
+                CurrentOptions = JsonConvert.DeserializeObject<Options>(File.ReadAllText(SettingsFile));
             }
 
-            if (CurrentOptions.Theme == Color.Empty || CurrentOptions.Theme == Color.FromArgb(0, 0, 0))
+            // prevent options from corruption
+            if (CurrentOptions.Theme == Color.Empty || CurrentOptions.Theme == Color.FromArgb(0, 0, 0, 0))
             {
                 CurrentOptions.Theme = Color.FromArgb(153, 102, 204);
             }
+            // generate random telemetry ID if not present
+            //if (string.IsNullOrEmpty(CurrentOptions.TelemetryClientID))
+            //{
+            //    CurrentOptions.TelemetryClientID = Guid.NewGuid().ToString().ToUpperInvariant();
+            //    SaveSettings();
+            //}
 
             LoadTranslation();
         }
@@ -324,10 +278,18 @@ namespace Optimizer
                 if (CurrentOptions.LanguageCode == LanguageCode.RO) TranslationList = JObject.Parse(Properties.Resources.RO);
                 if (CurrentOptions.LanguageCode == LanguageCode.NL) TranslationList = JObject.Parse(Properties.Resources.NL);
                 if (CurrentOptions.LanguageCode == LanguageCode.UA) TranslationList = JObject.Parse(Properties.Resources.UA);
+                if (CurrentOptions.LanguageCode == LanguageCode.JA) TranslationList = JObject.Parse(Properties.Resources.JA);
+                if (CurrentOptions.LanguageCode == LanguageCode.FA) TranslationList = JObject.Parse(Properties.Resources.FA);
+                if (CurrentOptions.LanguageCode == LanguageCode.NE) TranslationList = JObject.Parse(Properties.Resources.NE);
+                if (CurrentOptions.LanguageCode == LanguageCode.BG) TranslationList = JObject.Parse(Properties.Resources.BG);
+                if (CurrentOptions.LanguageCode == LanguageCode.VN) TranslationList = JObject.Parse(Properties.Resources.VN);
+                if (CurrentOptions.LanguageCode == LanguageCode.UR) TranslationList = JObject.Parse(Properties.Resources.UR);
+                if (CurrentOptions.LanguageCode == LanguageCode.ID) TranslationList = JObject.Parse(Properties.Resources.ID);
+                if (CurrentOptions.LanguageCode == LanguageCode.HR) TranslationList = JObject.Parse(Properties.Resources.HR);
             }
             catch (Exception ex)
             {
-                ErrorLogger.LogError("Options.LoadTranslation", ex.Message, ex.StackTrace);
+                Logger.LogError("Options.LoadTranslation", ex.Message, ex.StackTrace);
                 TranslationList = JObject.Parse(Properties.Resources.EN);
             }
         }

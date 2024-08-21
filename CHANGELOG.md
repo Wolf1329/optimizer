@@ -1,3 +1,143 @@
+## [16.7] - 2024-08-18
+- New: Disable Edge and Chrome telemetry options now extends Manifest v2 support
+- New: Enable Registry Periodic Backups
+- Hotfix: Various UI bugs
+
+## [16.6] - 2024-07-06
+- New: System Variables editor in Integrator
+- New: Disable Copilot + Recall feature
+- New: Disable Phone Link suggestions
+- New: Disable Microsoft Services ads showing as suggestions
+- New: Indonesian and Croatian language added
+- Hotfix: Malware Tool Removal excluded completely, because of false positives
+- Improved: Localization updates
+- Improved: Visual changes
+
+## [16.5] - 2024-05-03
+- New: Enable UTC time globally on Windows
+- New: Disable Modern Standby feature on Windows 10/11
+- New: Hide Search & Weather icons from taskbar
+- New: Disable News & Interests
+- New: Show all notification icons on taskbar
+- New: Remove menus delay
+- New: Vietnamese and Urdu languages
+- New: Disable CoPilot AI now applies to Edge as well
+- Improved: Localization updates
+- Improved: Many quality-of-life changes
+- Hotfix: Sorting deleting bug in Startup items (#489)
+
+## [16.4] - 2023-12-29
+- New: FAQ section link in Options
+- New: Various performance improvements from code refactoring
+- Hotfix: Rare bug when checking for update (#444)
+- Hotfix: SmartScreen resets properly now (#453)
+- Hotfix: Apps download folder is now by default empty to avoid issues
+- Hotfix: Rare bug when fetching app feeds (#450)
+
+## [16.3] - 2023-12-22
+- New: Check for updates on launch option (#441, #423)
+- New: Options for hiding Weather and Search in Restore Classic Windows Explorer (#447)
+- Hotfix: Web search disable for all users (#427)
+- Hotfix: Tweak options are now dynamically disabled properly (#431)
+- Hotfix: Disable Automatic Updates does not break Store app install/update
+- Hotfix: DPI scaling count fallback added
+
+## [16.2] - 2023-10-28
+- Regression: 'Remove Microsoft Edge' removed as an option due to too many false positives in VirusTotal
+
+## [16.1] - 2023-10-21
+- Hotfix: 'Reinforce policies' issues resolved (#401, #402)
+- New: Completely 'Remove Microsoft Edge' option in Advanced Tweaks (cannot be reverted!)
+- New: Selective tweaks for "Optimize Performance" and "Enhance Privacy" (#393, #374)
+
+## [16.0] - 2023-10-14
+- Hotfix: 'Reinforce policies' crash resolved (#400)
+
+## [15.9] - 2023-10-14
+- New: Disable CoPilot AI (in Windows 11)
+- New: Fully translated into Bulgarian
+- New: 'Reinforce policies' in Options re-applies your current enabled tweaks (#389)
+- Hotfix: Crash on localized versions of Windows (#383)
+- Hotfix: Various UI bugs
+- Improved: Optimized images and assets
+- Improved: Startup items detection
+
+## [15.8] - 2023-08-26
+- New: Fully translated into Nepali (thanks to chapagetti)
+- New: You can now set custom DNS in Pinger, as well as from template
+- New: Internal settings for controlling which tools to load
+- Hotfix: Various UI glitches and localization updates
+
+## [15.7] - 2023-08-19
+- New: Change Windows default font in Integrator (#358)
+- New: Template engine now runs on Windows Server 2008 or newer
+- Hotfix: Rare crash bug in UWP apps loading
+- Improved: Tab glitching resolved (#376)
+- Improved: Disable Start Menu ads and Disable Store Updates
+- Improved: Template engine changes regarding Hosts editing and logging
+
+## [15.6] - 2023-07-22
+- Hotfix: Crash on UWP load apps (#369 #370)
+
+## [15.5] - 2023-07-22
+- New: Fully translated into Persian/Farsi (thanks to https://github.com/MjavadH - MjavadH)
+- New: RustDesk in Apps > Internet section
+- New: Confirmation before restarting (#343)
+- New: Include WWW CNAME prefix in Hosts
+- Improved: Various localization updates
+- Improved: Error logger now supports unhandled exceptions
+- Improved: UI on low resolution displays
+- Improved: Default app downloads folder set to user's downloads folder
+
+## [15.4] - 2023-06-14
+- New: Restore Classic Photo Viewer in Windows 10/11 (#342)
+- Hotfix: Addressed various UI glitches
+
+## [15.3] - 2023-05-18
+- New: Automation engine by using reusable templates (https://github.com/hellzerg/optimizer/blob/master/AUTOMATION.md)
+- Hotfix: Various localization updates
+- Hotfix: Rare bug in Cleaner, when choosing Mozilla Firefox
+- Hotfix: Improvements on UI scaling
+
+## [15.2] - 2023-05-11
+- New: Disable or Reset svchost process splitting mechanism
+- Hotfix: Rare crash when loading UWP apps
+- Hotfix: Properly loading UWP apps in Windows 8/8.1 now
+- Hotfix: Various localization updates
+
+## [15.1] - 2023-04-23
+- Hotfix: Disable Edge Discover now works properly
+- Improve: Disable SmartScreen and Visual Studio Telemetry
+
+## [15.0] - 2023-04-16
+- New: Advanced Tab with extra tweaks. Use /unsafe to use this tab
+- New: Disable HPET in Advanced
+- New: Enable Verbose Login in Advanced
+- New: Disable Edge Telemetry
+- New: Disable Edge Discover bar
+- New: Minor visual changes
+- Hotfix: Hosts tab not loading in some occasions
+- Hotfix: Various localization updates
+- Removed: Classic Ribbon for Windows 11 because Microsoft dropped it
+- Removed: Taskbar Size for Windows 11 because Microsoft dropped it
+- Removed: Optimizer Insights telemetry service
+
+## [14.9] - 2023-02-18
+- New: Uninstall OneDrive is ONLY visible in UNSAFE MODE, for apparent reasons...
+- New: Optimizer Insights collects - with great respect to privacy - every error the app produces for further investigation
+- New: Of course, you can disable Optimizer Insights in Options
+- New: Fully translated into Japanese (thanks to Yamada Hayao - https://github.com/Hayao0819 for Japanese translation) (#286)
+- Improved: Minor code refactoring
+
+## [14.8] - 2023-01-07
+- New: Updated to .NET Framework 4.8 for better performance and support
+- New: Added Restore all UWP apps
+- Improved: Refactored command-line processor
+- Hotfix: UWP uninstall confirmation message fixed (#281)
+
+## [14.7] - 2022-12-24
+- Hotfix: Theme color bug causing crash on launch
+
 ## [14.6] - 2022-12-17
 - New: Disable Microsoft Store Updates
 - Hotfix: Automatic/manual updates working again

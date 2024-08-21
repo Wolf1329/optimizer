@@ -6,18 +6,27 @@
         Error,
     }
 
+    internal enum EventType
+    {
+        Modified,
+        Renamed,
+        Created,
+        Deleted
+    }
+
     internal enum WindowsVersion
     {
-        Unsupported,
-        Windows7,
-        Windows8,
-        Windows10,
-        Windows11
+        Unsupported = 0,
+        Windows7 = 7,
+        Windows8 = 8,
+        Windows10 = 10,
+        Windows11 = 11
     }
 
     public enum StartupItemLocation
     {
-        Folder,
+        LMStartupFolder,
+        CUStartupFolder,
         HKLM,
         HKLMWoW,
         HKCU
@@ -76,6 +85,14 @@
         Right
     }
 
+    public enum RestartType
+    {
+        Normal,
+        SafeMode,
+        DisableDefender,
+        EnableDefender
+    }
+
     public enum LanguageCode
     {
         EN, // english
@@ -97,6 +114,14 @@
         HU, // hungarian
         RO, // romanian
         NL, // dutch
-        UA // ukrainian
+        UA, // ukrainian
+        JA, // japanese
+        FA, // farsi
+        NE, // nepali
+        BG, // bulgarian
+        VN, // vietnamese
+        UR, // urdu
+        ID, // indonesian
+        HR // croatian
     }
 }

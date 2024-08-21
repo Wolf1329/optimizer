@@ -25,7 +25,7 @@ namespace Optimizer
         ListViewColumnSorter _columnSorter;
 
         List<StartupItem> _startUpItems = new List<StartupItem>();
-        List<StartupBackupItem> _backupItems = new List<StartupBackupItem>();
+        List<BackupStartupItem> _backupItems = new List<BackupStartupItem>();
 
         List<string> _hostsEntries = new List<string>();
         List<string> _customCommands = new List<string>();
@@ -38,6 +38,9 @@ namespace Optimizer
         string _shodanIP = string.Empty;
         PingReply tmpReply;
 
+        int _tabHeaderHeightMargin = 6;
+        int _tabHeaderWidthMargin = 6;
+
         //NetworkMonitor _networkMonitor;
         //double uploadSpeed = 0;
         //double downloadSpeed = 0;
@@ -46,18 +49,21 @@ namespace Optimizer
         DesktopItemType _desktopItemType = DesktopItemType.Program;
         DesktopTypePosition _desktopItemPosition = DesktopTypePosition.Top;
 
-        public List<FeedApp> AppsFromFeed = new List<FeedApp>();
+        public List<AppInfo> AppsFromFeed = new List<AppInfo>();
         readonly string _feedLink = "https://raw.githubusercontent.com/hellzerg/optimizer/master/feed.json";
         readonly string _feedImages = "https://raw.githubusercontent.com/hellzerg/optimizer/master/images/feed.zip";
 
         readonly string _licenseLink = "https://www.gnu.org/licenses/gpl-3.0.en.html";
-        readonly string _discordLink = "https://discord.gg/rZh8BhmmQv";
+        readonly string _discordLink = "https://discord.gg/RmHYWMxWfJ";
         readonly string _githubProjectLink = "https://github.com/hellzerg/optimizer";
         readonly string _paypalSupportLink = "https://www.paypal.com/paypalme/supportoptimizer";
 
         readonly string _latestVersionLink = "https://raw.githubusercontent.com/hellzerg/optimizer/master/version.txt";
-        //readonly string _changelogLink = "https://github.com/hellzerg/optimizer/blob/master/CHANGELOG.md";
         readonly string _changelogRawLink = "https://raw.githubusercontent.com/hellzerg/optimizer/master/CHANGELOG.md";
+        readonly string _faqSectionLink = "https://github.com/hellzerg/optimizer/blob/master/FAQ.md";
+
+        readonly string _bugReportLink = "https://github.com/hellzerg/optimizer/issues/new?assignees=&labels=&projects=&template=bug_report.md&title=";
+        readonly string _featureRequestLink = "https://github.com/hellzerg/optimizer/issues/new?assignees=&labels=&projects=&template=feature_request.md&title=";
 
         string _noNewVersionMessage = "You already have the latest version!";
         string _betaVersionMessage = "You are using an experimental version!";
@@ -73,6 +79,8 @@ namespace Optimizer
         string _errorModernAppsMessage = "The following app(s) couldn't be uninstalled:\n";
         string _repairMessage = "Are you sure you want to reset configuration?\n\nThis will reset all your preferences, including any icons you extracted or downloaded using Integrator, but will not touch anything on your computer!";
         string _flushDNSMessage = "Are you sure you wish to flush the DNS cache of Windows?\n\nThis will cause internet disconnection for a moment and it may be needed a restart to function properly.";
+        string _uwpRestoreMessage = "Are you sure you want to do this?";
+        string _reinforcePoliciesMessage = "Are you sure you want to re-apply your current active policies?";
 
         string _byteSizeNullString = " b";
         string _primaryItemTag = "_primary";
@@ -81,22 +89,32 @@ namespace Optimizer
         bool _skipSystemRestore = false;
 
         string[] _currentDNS;
+        string[] _availableFonts;
+        List<string> _systemVariables = new List<string>();
 
         ColorOverrider _colorOverrider;
 
         List<TreeNode> _hwDetailed;
         TreeNode[] _hwSummarized;
 
-        //Size _sizeDefault = new Size(1100, 784);
-        //Size _sizeRussian = new Size(1410, 784);
-        //Size _sizeHellenic = new Size(1125, 784);
-        //Size _sizeTurkish = new Size(1130, 784);
-        //Size _sizeFrench = new Size(1085, 784);
-
         bool _cleanSelectAll = true;
         List<string> _cleanPreviewList;
 
         UpdateForm _updateForm;
+
+        bool _disableIndicium;
+        bool _disableAppsTool;
+        bool _disableHostsEditor;
+        bool _disableUWPApps;
+        bool _disableStartupTool;
+        bool _disableCleaner;
+        bool _disableIntegrator;
+        bool _disablePinger;
+
+        private int GetItemPadding()
+        {
+            return Program.DPI_PREFERENCE / 2;
+        }
 
         private string NewDownloadLink(string latestVersion)
         {
@@ -117,15 +135,21 @@ namespace Optimizer
             }
             catch (Exception ex)
             {
-                ErrorLogger.LogError("MainForm.CheckForUpdate", ex.Message, ex.StackTrace);
+                Logger.LogError("MainForm.CheckForUpdate", ex.Message, ex.StackTrace);
                 MessageBox.Show(ex.Message, "Optimizer", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
             }
 
             if (!string.IsNullOrEmpty(latestVersion))
             {
-                if (float.Parse(latestVersion) > Program.GetCurrentVersion())
+                bool conversionSuccess = float.TryParse(latestVersion, out float latestVersionFloat);
+                if (!conversionSuccess)
                 {
-                    // show UPDATE AVAILABLE on app launch
+                    return;
+                }
+
+                if (latestVersionFloat > Program.GetCurrentVersionToFloat())
+                {
                     if (silentCheck)
                     {
                         picUpdate.Visible = true;
@@ -180,12 +204,12 @@ namespace Optimizer
                         }
                         catch (Exception ex)
                         {
-                            ErrorLogger.LogError("MainForm.CheckForUpdate", ex.Message, ex.StackTrace);
+                            Logger.LogError("MainForm.CheckForUpdate", ex.Message, ex.StackTrace);
                             MessageBox.Show(ex.Message);
                         }
                     }
                 }
-                else if (float.Parse(latestVersion) == Program.GetCurrentVersion())
+                else if (latestVersionFloat == Program.GetCurrentVersionToFloat())
                 {
                     if (!silentCheck)
                     {
@@ -215,6 +239,8 @@ namespace Optimizer
             printSw.ToggleClicked += new EventHandler(toggleSwitch5_Click);
             systemRestoreSw.ToggleClicked += new EventHandler(toggleSwitch4_Click);
             performanceSw.ToggleClicked += new EventHandler(toggleSwitch1_Click);
+            noMenuDelaySw.ToggleClicked += new EventHandler(NoMenuDelaySw_ToggleClicked);
+            allTrayIconsSw.ToggleClicked += new EventHandler(AllTrayIconsSw_ToggleClicked);
             defenderSw.ToggleClicked += new EventHandler(toggleSwitch3_Click);
             networkSw.ToggleClicked += new EventHandler(toggleSwitch2_Click);
             spellSw.ToggleClicked += new EventHandler(toggleSwitch28_Click);
@@ -228,6 +254,8 @@ namespace Optimizer
             adsSw.ToggleClicked += new EventHandler(toggleSwitch26_Click);
             xboxSw.ToggleClicked += new EventHandler(toggleSwitch17_Click);
             cortanaSw.ToggleClicked += new EventHandler(toggleSwitch16_Click);
+            edgeAiSw.ToggleClicked += new EventHandler(EdgeAiSw_ToggleClicked);
+            edgeTelemetrySw.ToggleClicked += new EventHandler(EdgeTelemetrySw_ToggleClicked);
             gameBarSw.ToggleClicked += new EventHandler(toggleSwitch15_Click);
             uODSw.ToggleClicked += new EventHandler(toggleSwitch14_Click);
             oldMixerSw.ToggleClicked += new EventHandler(toggleSwitch13_Click);
@@ -245,10 +273,8 @@ namespace Optimizer
             leftTaskbarSw.ToggleClicked += new EventHandler(LeftTaskbarSw_Click);
             snapAssistSw.ToggleClicked += new EventHandler(SnapAssistSw_Click);
             widgetsSw.ToggleClicked += new EventHandler(WidgetsSw_Click);
-            smallerTaskbarSw.ToggleClicked += new EventHandler(SmallerTaskbarSw_Click);
             chatSw.ToggleClicked += new EventHandler(chatSw_Click);
             stickersSw.ToggleClicked += new EventHandler(StickersSw_ToggleClicked);
-            classicRibbonSw.ToggleClicked += new EventHandler(ClassicRibbonSw_Click);
             classicContextSw.ToggleClicked += new EventHandler(ClassicContextSw_Click);
             ffTelemetrySw.ToggleClicked += new EventHandler(FfTelemetrySw_ToggleClicked);
             chromeTelemetrySw.ToggleClicked += new EventHandler(ChromeTelemetrySw_ToggleClicked);
@@ -263,6 +289,16 @@ namespace Optimizer
             winSearchSw.ToggleClicked += WinSearchSw_ToggleClicked;
             nvidiaTelemetrySw.ToggleClicked += NvidiaTelemetrySw_ToggleClicked;
             vbsSw.ToggleClicked += VbsSw_ToggleClicked;
+            hpetSw.ToggleClicked += HpetSw_ToggleClicked;
+            loginVerboseSw.ToggleClicked += LoginVerboseSw_ToggleClicked;
+            classicPhotoViewerSw.ToggleClicked += ClassicPhotoViewerSw_ToggleClicked;
+            copilotSw.ToggleClicked += CopilotSw_ToggleClicked;
+            hideWeatherSw.ToggleClicked += HideWeatherSw_ToggleClicked;
+            hideSearchSw.ToggleClicked += HideSearchSw_ToggleClicked;
+            modernStandbySw.ToggleClicked += ModernStandbySw_ToggleClicked;
+            newsInterestsSw.ToggleClicked += NewsInterestsSw_ToggleClicked;
+            enableUtcSw.ToggleClicked += EnableUtcSw_ToggleClicked;
+            regBackupSw.ToggleClicked += RegBackupSw_ToggleClicked;
 
             PMB.ToggleClicked += PMB_ToggleClicked;
             SSB.ToggleClicked += SSB_ToggleClicked;
@@ -273,30 +309,212 @@ namespace Optimizer
             AddOwnerB.ToggleClicked += AddOwnerB_ToggleClicked;
         }
 
+        private void RegBackupSw_ToggleClicked(object sender, EventArgs e)
+        {
+            if (regBackupSw.ToggleChecked)
+            {
+                OptimizeHelper.EnablePeriodicRegistryBackup();
+            }
+            else
+            {
+                OptimizeHelper.DisablePeriodicRegistryBackup();
+            }
+            OptionsHelper.CurrentOptions.EnableRegistryBackups = regBackupSw.ToggleChecked;
+        }
+
+        private void EnableUtcSw_ToggleClicked(object sender, EventArgs e)
+        {
+            if (enableUtcSw.ToggleChecked)
+            {
+                OptimizeHelper.EnableUTCTime();
+            }
+            else
+            {
+                OptimizeHelper.DisableUTCTime();
+            }
+            OptionsHelper.CurrentOptions.EnableUtcTime = enableUtcSw.ToggleChecked;
+        }
+
+        private void NewsInterestsSw_ToggleClicked(object sender, EventArgs e)
+        {
+            if (newsInterestsSw.ToggleChecked)
+            {
+                OptimizeHelper.DisableNewsInterests();
+            }
+            else
+            {
+                OptimizeHelper.EnableNewsInterests();
+            }
+            OptionsHelper.CurrentOptions.DisableNewsInterests = newsInterestsSw.ToggleChecked;
+        }
+
+        private void ModernStandbySw_ToggleClicked(object sender, EventArgs e)
+        {
+            if (modernStandbySw.ToggleChecked)
+            {
+                OptimizeHelper.DisableModernStandby();
+            }
+            else
+            {
+                OptimizeHelper.EnableModernStandby();
+            }
+            OptionsHelper.CurrentOptions.DisableModernStandby = modernStandbySw.ToggleChecked;
+        }
+
+        private void HideSearchSw_ToggleClicked(object sender, EventArgs e)
+        {
+            if (hideSearchSw.ToggleChecked)
+            {
+                OptimizeHelper.HideTaskbarSearch();
+            }
+            else
+            {
+                OptimizeHelper.ShowTaskbarSearch();
+            }
+            OptionsHelper.CurrentOptions.HideTaskbarSearch = hideSearchSw.ToggleChecked;
+        }
+
+        private void HideWeatherSw_ToggleClicked(object sender, EventArgs e)
+        {
+            if (hideWeatherSw.ToggleChecked)
+            {
+                OptimizeHelper.HideTaskbarWeather();
+            }
+            else
+            {
+                OptimizeHelper.ShowTaskbarWeather();
+            }
+            OptionsHelper.CurrentOptions.HideTaskbarWeather = hideWeatherSw.ToggleChecked;
+        }
+
+        private void AllTrayIconsSw_ToggleClicked(object sender, EventArgs e)
+        {
+            if (allTrayIconsSw.ToggleChecked)
+            {
+                OptimizeHelper.ShowAllTrayIcons();
+            }
+            else
+            {
+                OptimizeHelper.HideTrayIcons();
+            }
+            OptionsHelper.CurrentOptions.ShowAllTrayIcons = allTrayIconsSw.ToggleChecked;
+        }
+
+        private void NoMenuDelaySw_ToggleClicked(object sender, EventArgs e)
+        {
+            if (noMenuDelaySw.ToggleChecked)
+            {
+                OptimizeHelper.RemoveMenusDelay();
+            }
+            else
+            {
+                OptimizeHelper.RestoreMenusDelay();
+            }
+            OptionsHelper.CurrentOptions.RemoveMenusDelay = noMenuDelaySw.ToggleChecked;
+        }
+
+        private void CopilotSw_ToggleClicked(object sender, EventArgs e)
+        {
+            if (copilotSw.ToggleChecked)
+            {
+                OptimizeHelper.DisableCoPilotAI();
+            }
+            else
+            {
+                OptimizeHelper.EnableCoPilotAI();
+            }
+            OptionsHelper.CurrentOptions.DisableCoPilotAI = copilotSw.ToggleChecked;
+        }
+
+        private void ClassicPhotoViewerSw_ToggleClicked(object sender, EventArgs e)
+        {
+            if (classicPhotoViewerSw.ToggleChecked)
+            {
+                OptimizeHelper.RestoreClassicPhotoViewer();
+            }
+            else
+            {
+                OptimizeHelper.DisableClassicPhotoViewer();
+            }
+            OptionsHelper.CurrentOptions.RestoreClassicPhotoViewer = classicPhotoViewerSw.ToggleChecked;
+        }
+
+        private void LoginVerboseSw_ToggleClicked(object sender, EventArgs e)
+        {
+            if (loginVerboseSw.ToggleChecked)
+            {
+                Utilities.EnableLoginVerbose();
+            }
+            else
+            {
+                Utilities.DisableLoginVerbose();
+            }
+            OptionsHelper.CurrentOptions.EnableLoginVerbose = loginVerboseSw.ToggleChecked;
+        }
+
+        private void HpetSw_ToggleClicked(object sender, EventArgs e)
+        {
+            if (hpetSw.ToggleChecked)
+            {
+                Utilities.DisableHPET();
+            }
+            else
+            {
+                Utilities.EnableHPET();
+            }
+            OptionsHelper.CurrentOptions.DisableHPET = hpetSw.ToggleChecked;
+        }
+
+        private void EdgeTelemetrySw_ToggleClicked(object sender, EventArgs e)
+        {
+            if (edgeTelemetrySw.ToggleChecked)
+            {
+                OptimizeHelper.DisableEdgeTelemetry();
+            }
+            else
+            {
+                OptimizeHelper.EnableEdgeTelemetry();
+            }
+            OptionsHelper.CurrentOptions.DisableEdgeTelemetry = edgeTelemetrySw.ToggleChecked;
+        }
+
+        private void EdgeAiSw_ToggleClicked(object sender, EventArgs e)
+        {
+            if (edgeAiSw.ToggleChecked)
+            {
+                OptimizeHelper.DisableEdgeDiscoverBar();
+            }
+            else
+            {
+                OptimizeHelper.EnableEdgeDiscoverBar();
+            }
+            OptionsHelper.CurrentOptions.DisableEdgeDiscoverBar = edgeAiSw.ToggleChecked;
+        }
+
         private void WinSearchSw_ToggleClicked(object sender, EventArgs e)
         {
             if (winSearchSw.ToggleChecked)
             {
-                Optimize.DisableSearch();
+                OptimizeHelper.DisableSearch();
             }
             else
             {
-                Optimize.EnableSearch();
+                OptimizeHelper.EnableSearch();
             }
-            Options.CurrentOptions.DisableSearch = winSearchSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableSearch = winSearchSw.ToggleChecked;
         }
 
         private void VbsSw_ToggleClicked(object sender, EventArgs e)
         {
             if (vbsSw.ToggleChecked)
             {
-                Optimize.DisableVirtualizationBasedSecurity();
+                OptimizeHelper.DisableVirtualizationBasedSecurity();
             }
             else
             {
-                Optimize.EnableVirtualizationBasedSecurity();
+                OptimizeHelper.EnableVirtualizationBasedSecurity();
             }
-            Options.CurrentOptions.DisableVBS = vbsSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableVBS = vbsSw.ToggleChecked;
             ShowRestartNeeded();
         }
 
@@ -304,13 +522,13 @@ namespace Optimizer
         {
             if (nvidiaTelemetrySw.ToggleChecked)
             {
-                Optimize.DisableNvidiaTelemetry();
+                OptimizeHelper.DisableNvidiaTelemetry();
             }
             else
             {
-                Optimize.EnableNvidiaTelemetry();
+                OptimizeHelper.EnableNvidiaTelemetry();
             }
-            Options.CurrentOptions.DisableNVIDIATelemetry = nvidiaTelemetrySw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableNVIDIATelemetry = nvidiaTelemetrySw.ToggleChecked;
             ShowRestartNeeded();
         }
 
@@ -318,13 +536,13 @@ namespace Optimizer
         {
             if (ntfsStampSw.ToggleChecked)
             {
-                Optimize.DisableNTFSTimeStamp();
+                OptimizeHelper.DisableNTFSTimeStamp();
             }
             else
             {
-                Optimize.EnableNTFSTimeStamp();
+                OptimizeHelper.EnableNTFSTimeStamp();
             }
-            Options.CurrentOptions.DisableNTFSTimeStamp = ntfsStampSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableNTFSTimeStamp = ntfsStampSw.ToggleChecked;
             ShowRestartNeeded();
         }
 
@@ -332,13 +550,13 @@ namespace Optimizer
         {
             if (smb2Sw.ToggleChecked)
             {
-                Optimize.DisableSMB("2");
+                OptimizeHelper.DisableSMB("2");
             }
             else
             {
-                Optimize.EnableSMB("2");
+                OptimizeHelper.EnableSMB("2");
             }
-            Options.CurrentOptions.DisableSMB2 = smb2Sw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableSMB2 = smb2Sw.ToggleChecked;
             ShowRestartNeeded();
         }
 
@@ -346,13 +564,13 @@ namespace Optimizer
         {
             if (smb1Sw.ToggleChecked)
             {
-                Optimize.DisableSMB("1");
+                OptimizeHelper.DisableSMB("1");
             }
             else
             {
-                Optimize.EnableSMB("1");
+                OptimizeHelper.EnableSMB("1");
             }
-            Options.CurrentOptions.DisableSMB1 = smb1Sw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableSMB1 = smb1Sw.ToggleChecked;
             ShowRestartNeeded();
         }
 
@@ -366,7 +584,7 @@ namespace Optimizer
             {
                 Utilities.EnableHibernation();
             }
-            Options.CurrentOptions.DisableHibernation = hibernateSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableHibernation = hibernateSw.ToggleChecked;
             ShowRestartNeeded();
         }
 
@@ -374,39 +592,39 @@ namespace Optimizer
         {
             if (stickersSw.ToggleChecked)
             {
-                Optimize.DisableStickers();
+                OptimizeHelper.DisableStickers();
             }
             else
             {
-                Optimize.EnableStickers();
+                OptimizeHelper.EnableStickers();
             }
-            Options.CurrentOptions.DisableStickers = stickersSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableStickers = stickersSw.ToggleChecked;
         }
 
         private void TpmSw_ToggleClicked(object sender, EventArgs e)
         {
             if (tpmSw.ToggleChecked)
             {
-                Optimize.DisableTPMCheck();
+                OptimizeHelper.DisableTPMCheck();
             }
             else
             {
-                Optimize.EnableTPMCheck();
+                OptimizeHelper.EnableTPMCheck();
             }
-            Options.CurrentOptions.DisableTPMCheck = tpmSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableTPMCheck = tpmSw.ToggleChecked;
         }
 
         private void CompactModeSw_ToggleClicked(object sender, EventArgs e)
         {
             if (compactModeSw.ToggleChecked)
             {
-                Optimize.EnableFilesCompactMode();
+                OptimizeHelper.EnableFilesCompactMode();
             }
             else
             {
-                Optimize.DisableFilesCompactMode();
+                OptimizeHelper.DisableFilesCompactMode();
             }
-            Options.CurrentOptions.CompactMode = compactModeSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.CompactMode = compactModeSw.ToggleChecked;
             ShowRestartNeeded();
         }
 
@@ -414,13 +632,13 @@ namespace Optimizer
         {
             if (gameModeSw.ToggleChecked)
             {
-                Optimize.EnableGamingMode();
+                OptimizeHelper.EnableGamingMode();
             }
             else
             {
-                Optimize.DisableGamingMode();
+                OptimizeHelper.DisableGamingMode();
             }
-            Options.CurrentOptions.EnableGamingMode = gameModeSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.EnableGamingMode = gameModeSw.ToggleChecked;
             ShowRestartNeeded();
         }
 
@@ -428,66 +646,52 @@ namespace Optimizer
         {
             if (vsSw.ToggleChecked)
             {
-                Optimize.DisableVisualStudioTelemetry();
+                OptimizeHelper.DisableVisualStudioTelemetry();
             }
             else
             {
-                Optimize.EnableVisualStudioTelemetry();
+                OptimizeHelper.EnableVisualStudioTelemetry();
             }
-            Options.CurrentOptions.DisableVisualStudioTelemetry = vsSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableVisualStudioTelemetry = vsSw.ToggleChecked;
         }
 
         private void ChromeTelemetrySw_ToggleClicked(object sender, EventArgs e)
         {
             if (chromeTelemetrySw.ToggleChecked)
             {
-                Optimize.DisableChromeTelemetry();
+                OptimizeHelper.DisableChromeTelemetry();
             }
             else
             {
-                Optimize.EnableChromeTelemetry();
+                OptimizeHelper.EnableChromeTelemetry();
             }
-            Options.CurrentOptions.DisableChromeTelemetry = chromeTelemetrySw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableChromeTelemetry = chromeTelemetrySw.ToggleChecked;
         }
 
         private void FfTelemetrySw_ToggleClicked(object sender, EventArgs e)
         {
             if (ffTelemetrySw.ToggleChecked)
             {
-                Optimize.DisableFirefoxTelemetry();
+                OptimizeHelper.DisableFirefoxTelemetry();
             }
             else
             {
-                Optimize.EnableFirefoxTelemetry();
+                OptimizeHelper.EnableFirefoxTelemetry();
             }
-            Options.CurrentOptions.DisableFirefoxTemeletry = ffTelemetrySw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableFirefoxTemeletry = ffTelemetrySw.ToggleChecked;
         }
 
         private void ClassicContextSw_Click(object sender, EventArgs e)
         {
             if (classicContextSw.ToggleChecked)
             {
-                Optimize.DisableShowMoreOptions();
+                OptimizeHelper.DisableShowMoreOptions();
             }
             else
             {
-                Optimize.EnableShowMoreOptions();
+                OptimizeHelper.EnableShowMoreOptions();
             }
-            Options.CurrentOptions.ClassicMenu = classicContextSw.ToggleChecked;
-            ShowRestartNeeded();
-        }
-
-        private void ClassicRibbonSw_Click(object sender, EventArgs e)
-        {
-            if (classicRibbonSw.ToggleChecked)
-            {
-                Optimize.EnableFileExplorerClassicRibbon();
-            }
-            else
-            {
-                Optimize.DisableFileExplorerClassicRibbon();
-            }
-            Options.CurrentOptions.ClassicRibbon = classicContextSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.ClassicMenu = classicContextSw.ToggleChecked;
             ShowRestartNeeded();
         }
 
@@ -495,52 +699,39 @@ namespace Optimizer
         {
             if (chatSw.ToggleChecked)
             {
-                Optimize.DisableChat();
+                OptimizeHelper.DisableChat();
             }
             else
             {
-                Optimize.EnableChat();
+                OptimizeHelper.EnableChat();
             }
-            Options.CurrentOptions.DisableChat = chatSw.ToggleChecked;
-        }
-
-        private void SmallerTaskbarSw_Click(object sender, EventArgs e)
-        {
-            if (smallerTaskbarSw.ToggleChecked)
-            {
-                Optimize.SmallerTaskbar();
-            }
-            else
-            {
-                Optimize.DefaultTaskbarSize();
-            }
-            Options.CurrentOptions.TaskbarSmaller = smallerTaskbarSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableChat = chatSw.ToggleChecked;
         }
 
         private void WidgetsSw_Click(object sender, EventArgs e)
         {
             if (widgetsSw.ToggleChecked)
             {
-                Optimize.DisableWidgets();
+                OptimizeHelper.DisableWidgets();
             }
             else
             {
-                Optimize.EnableWidgets();
+                OptimizeHelper.EnableWidgets();
             }
-            Options.CurrentOptions.DisableWidgets = widgetsSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableWidgets = widgetsSw.ToggleChecked;
         }
 
         private void SnapAssistSw_Click(object sender, EventArgs e)
         {
             if (snapAssistSw.ToggleChecked)
             {
-                Optimize.DisableSnapAssist();
+                OptimizeHelper.DisableSnapAssist();
             }
             else
             {
-                Optimize.EnableSnapAssist();
+                OptimizeHelper.EnableSnapAssist();
             }
-            Options.CurrentOptions.DisableSnapAssist = snapAssistSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableSnapAssist = snapAssistSw.ToggleChecked;
             ShowRestartNeeded();
         }
 
@@ -548,185 +739,204 @@ namespace Optimizer
         {
             if (leftTaskbarSw.ToggleChecked)
             {
-                Optimize.AlignTaskbarToLeft();
+                OptimizeHelper.AlignTaskbarToLeft();
             }
             else
             {
-                Optimize.AlignTaskbarToCenter();
+                OptimizeHelper.AlignTaskbarToCenter();
             }
-            Options.CurrentOptions.TaskbarToLeft = leftTaskbarSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.TaskbarToLeft = leftTaskbarSw.ToggleChecked;
         }
 
         private void TranslateTips()
         {
-            performanceSw.Label.Tag = Options.TranslationList["performanceTip"].ToString();
-            networkSw.Label.Tag = Options.TranslationList["networkTip"].ToString();
-            defenderSw.Label.Tag = Options.TranslationList["defenderTip"].ToString();
-            smartScreenSw.Label.Tag = Options.TranslationList["smartScreenTip"].ToString();
-            systemRestoreSw.Label.Tag = Options.TranslationList["systemRestoreTip"].ToString();
-            reportingSw.Label.Tag = Options.TranslationList["reportingTip"].ToString();
-            telemetryTasksSw.Label.Tag = Options.TranslationList["telemetryTasksTip"].ToString();
-            officeTelemetrySw.Label.Tag = Options.TranslationList["officeTelemetryTip"].ToString();
-            printSw.Label.Tag = Options.TranslationList["printTip"].ToString();
-            faxSw.Label.Tag = Options.TranslationList["faxTip"].ToString();
-            mediaSharingSw.Label.Tag = Options.TranslationList["mediaSharingTip"].ToString();
-            stickySw.Label.Tag = Options.TranslationList["stickyTip"].ToString();
-            homegroupSw.Label.Tag = Options.TranslationList["homegroupTip"].ToString();
-            superfetchSw.Label.Tag = Options.TranslationList["superfetchTip"].ToString();
-            compatSw.Label.Tag = Options.TranslationList["compatTip"].ToString();
-            disableOneDriveSw.Label.Tag = Options.TranslationList["disableOneDriveTip"].ToString();
-            oldMixerSw.Label.Tag = Options.TranslationList["oldMixerTip"].ToString();
-            oldExplorerSw.Label.Tag = Options.TranslationList["oldExplorerTip"].ToString();
-            adsSw.Label.Tag = Options.TranslationList["adsTip"].ToString();
-            uODSw.Label.Tag = Options.TranslationList["uODTip"].ToString();
-            peopleSw.Label.Tag = Options.TranslationList["peopleTip"].ToString();
-            longPathsSw.Label.Tag = Options.TranslationList["longPathsTip"].ToString();
-            inkSw.Label.Tag = Options.TranslationList["inkTip"].ToString();
-            spellSw.Label.Tag = Options.TranslationList["spellTip"].ToString();
-            xboxSw.Label.Tag = Options.TranslationList["xboxTip"].ToString();
-            autoUpdatesSw.Label.Tag = Options.TranslationList["autoUpdatesTip"].ToString();
-            driversSw.Label.Tag = Options.TranslationList["driversTip"].ToString();
-            telemetryServicesSw.Label.Tag = Options.TranslationList["telemetryServicesTip"].ToString();
-            privacySw.Label.Tag = Options.TranslationList["privacyTip"].ToString();
-            ccSw.Label.Tag = Options.TranslationList["ccTip"].ToString();
-            cortanaSw.Label.Tag = Options.TranslationList["cortanaTip"].ToString();
-            sensorSw.Label.Tag = Options.TranslationList["sensorTip"].ToString();
-            castSw.Label.Tag = Options.TranslationList["castTip"].ToString();
-            gameBarSw.Label.Tag = Options.TranslationList["gameBarTip"].ToString();
-            insiderSw.Label.Tag = Options.TranslationList["insiderTip"].ToString();
-            storeUpdatesSw.Label.Tag = Options.TranslationList["storeUpdatesTip"].ToString();
-            tpmSw.Label.Tag = Options.TranslationList["tpmTip"].ToString();
-            leftTaskbarSw.Label.Tag = Options.TranslationList["leftTaskbarTip"].ToString();
-            snapAssistSw.Label.Tag = Options.TranslationList["snapAssistTip"].ToString();
-            widgetsSw.Label.Tag = Options.TranslationList["widgetsTip"].ToString();
-            chatSw.Label.Tag = Options.TranslationList["chatTip"].ToString();
-            stickersSw.Label.Tag = Options.TranslationList["stickersTip"].ToString();
-            smallerTaskbarSw.Label.Tag = Options.TranslationList["smallerTaskbarTip"].ToString();
-            classicRibbonSw.Label.Tag = Options.TranslationList["classicRibbonTip"].ToString();
-            classicContextSw.Label.Tag = Options.TranslationList["classicContextTip"].ToString();
-            picUpdate.Tag = Options.TranslationList["linkUpdate"].ToString() + "!";
-            picLab.Tag = Options.TranslationList["lblLab"].ToString();
-            picRestartNeeded.Tag = Options.TranslationList["restartAndApply"].ToString();
-            ffTelemetrySw.Label.Tag = Options.TranslationList["ffTelemetryTip"].ToString();
-            vsSw.Label.Tag = Options.TranslationList["vsTip"].ToString();
-            chromeTelemetrySw.Label.Tag = Options.TranslationList["chromeTelemetryTip"].ToString();
-            gameModeSw.Label.Tag = Options.TranslationList["gameModeTip"].ToString();
-            compactModeSw.Label.Tag = Options.TranslationList["compactModeTip"].ToString();
-            hibernateSw.Label.Tag = Options.TranslationList["hibernateTip"].ToString();
-            winSearchSw.Label.Tag = Options.TranslationList["winSearchTip"].ToString();
-            smb1Sw.Label.Tag = Options.TranslationList["smbTip"].ToString().Replace("{v}", "v1");
-            smb2Sw.Label.Tag = Options.TranslationList["smbTip"].ToString().Replace("{v}", "v2");
-            ntfsStampSw.Label.Tag = Options.TranslationList["ntfsStampTip"].ToString();
-            nvidiaTelemetrySw.Label.Tag = Options.TranslationList["nvidiaTelemetrySw"].ToString();
-            vbsSw.Label.Tag = Options.TranslationList["vbsTip"].ToString();
+            try
+            {
+                performanceSw.Label.Tag = OptionsHelper.TranslationList["performanceTip"].ToString();
+                noMenuDelaySw.Label.Tag = OptionsHelper.TranslationList["noMenuDelaySw"].ToString();
+                allTrayIconsSw.Label.Tag = OptionsHelper.TranslationList["allTrayIconsSw"].ToString();
+                networkSw.Label.Tag = OptionsHelper.TranslationList["networkTip"].ToString();
+                defenderSw.Label.Tag = OptionsHelper.TranslationList["defenderTip"].ToString();
+                smartScreenSw.Label.Tag = OptionsHelper.TranslationList["smartScreenTip"].ToString();
+                systemRestoreSw.Label.Tag = OptionsHelper.TranslationList["systemRestoreTip"].ToString();
+                reportingSw.Label.Tag = OptionsHelper.TranslationList["reportingTip"].ToString();
+                telemetryTasksSw.Label.Tag = OptionsHelper.TranslationList["telemetryTasksTip"].ToString();
+                officeTelemetrySw.Label.Tag = OptionsHelper.TranslationList["officeTelemetryTip"].ToString();
+                printSw.Label.Tag = OptionsHelper.TranslationList["printTip"].ToString();
+                faxSw.Label.Tag = OptionsHelper.TranslationList["faxTip"].ToString();
+                mediaSharingSw.Label.Tag = OptionsHelper.TranslationList["mediaSharingTip"].ToString();
+                stickySw.Label.Tag = OptionsHelper.TranslationList["stickyTip"].ToString();
+                homegroupSw.Label.Tag = OptionsHelper.TranslationList["homegroupTip"].ToString();
+                superfetchSw.Label.Tag = OptionsHelper.TranslationList["superfetchTip"].ToString();
+                compatSw.Label.Tag = OptionsHelper.TranslationList["compatTip"].ToString();
+                disableOneDriveSw.Label.Tag = OptionsHelper.TranslationList["disableOneDriveTip"].ToString();
+                oldMixerSw.Label.Tag = OptionsHelper.TranslationList["oldMixerTip"].ToString();
+                oldExplorerSw.Label.Tag = OptionsHelper.TranslationList["oldExplorerTip"].ToString();
+                adsSw.Label.Tag = OptionsHelper.TranslationList["adsTip"].ToString();
+                uODSw.Label.Tag = OptionsHelper.TranslationList["uODTip"].ToString();
+                peopleSw.Label.Tag = OptionsHelper.TranslationList["peopleTip"].ToString();
+                longPathsSw.Label.Tag = OptionsHelper.TranslationList["longPathsTip"].ToString();
+                inkSw.Label.Tag = OptionsHelper.TranslationList["inkTip"].ToString();
+                spellSw.Label.Tag = OptionsHelper.TranslationList["spellTip"].ToString();
+                xboxSw.Label.Tag = OptionsHelper.TranslationList["xboxTip"].ToString();
+                autoUpdatesSw.Label.Tag = OptionsHelper.TranslationList["autoUpdatesTip"].ToString();
+                driversSw.Label.Tag = OptionsHelper.TranslationList["driversTip"].ToString();
+                telemetryServicesSw.Label.Tag = OptionsHelper.TranslationList["telemetryServicesTip"].ToString();
+                privacySw.Label.Tag = OptionsHelper.TranslationList["privacyTip"].ToString();
+                ccSw.Label.Tag = OptionsHelper.TranslationList["ccTip"].ToString();
+                cortanaSw.Label.Tag = OptionsHelper.TranslationList["cortanaTip"].ToString();
+                edgeAiSw.Label.Tag = OptionsHelper.TranslationList["edgeAiTip"].ToString();
+                edgeTelemetrySw.Label.Tag = OptionsHelper.TranslationList["edgeTelemetryTip"].ToString();
+                sensorSw.Label.Tag = OptionsHelper.TranslationList["sensorTip"].ToString();
+                castSw.Label.Tag = OptionsHelper.TranslationList["castTip"].ToString();
+                gameBarSw.Label.Tag = OptionsHelper.TranslationList["gameBarTip"].ToString();
+                insiderSw.Label.Tag = OptionsHelper.TranslationList["insiderTip"].ToString();
+                storeUpdatesSw.Label.Tag = OptionsHelper.TranslationList["storeUpdatesTip"].ToString();
+                tpmSw.Label.Tag = OptionsHelper.TranslationList["tpmTip"].ToString();
+                leftTaskbarSw.Label.Tag = OptionsHelper.TranslationList["leftTaskbarTip"].ToString();
+                snapAssistSw.Label.Tag = OptionsHelper.TranslationList["snapAssistTip"].ToString();
+                widgetsSw.Label.Tag = OptionsHelper.TranslationList["widgetsTip"].ToString();
+                chatSw.Label.Tag = OptionsHelper.TranslationList["chatTip"].ToString();
+                stickersSw.Label.Tag = OptionsHelper.TranslationList["stickersTip"].ToString();
+                classicContextSw.Label.Tag = OptionsHelper.TranslationList["classicContextTip"].ToString();
+                picUpdate.Tag = OptionsHelper.TranslationList["linkUpdate"].ToString() + "!";
+                picLab.Tag = OptionsHelper.TranslationList["lblLab"].ToString();
+                picRestartNeeded.Tag = OptionsHelper.TranslationList["restartAndApply"].ToString();
+                ffTelemetrySw.Label.Tag = OptionsHelper.TranslationList["ffTelemetryTip"].ToString();
+                vsSw.Label.Tag = OptionsHelper.TranslationList["vsTip"].ToString();
+                chromeTelemetrySw.Label.Tag = OptionsHelper.TranslationList["chromeTelemetryTip"].ToString();
+                gameModeSw.Label.Tag = OptionsHelper.TranslationList["gameModeTip"].ToString();
+                compactModeSw.Label.Tag = OptionsHelper.TranslationList["compactModeTip"].ToString();
+                hibernateSw.Label.Tag = OptionsHelper.TranslationList["hibernateTip"].ToString();
+                winSearchSw.Label.Tag = OptionsHelper.TranslationList["winSearchTip"].ToString();
+                smb1Sw.Label.Tag = OptionsHelper.TranslationList["smbTip"].ToString().Replace("{v}", "v1");
+                smb2Sw.Label.Tag = OptionsHelper.TranslationList["smbTip"].ToString().Replace("{v}", "v2");
+                ntfsStampSw.Label.Tag = OptionsHelper.TranslationList["ntfsStampTip"].ToString();
+                nvidiaTelemetrySw.Label.Tag = OptionsHelper.TranslationList["nvidiaTelemetrySw"].ToString();
+                vbsSw.Label.Tag = OptionsHelper.TranslationList["vbsTip"].ToString();
+                hpetSw.Label.Tag = OptionsHelper.TranslationList["hpetSw"].ToString();
+                loginVerboseSw.Label.Tag = OptionsHelper.TranslationList["loginVerboseSw"].ToString();
+                classicPhotoViewerSw.Label.Tag = OptionsHelper.TranslationList["classicPhotoViewerSw"].ToString();
+                copilotSw.Label.Tag = OptionsHelper.TranslationList["copilotTip"].ToString();
+                hideWeatherSw.Label.Tag = OptionsHelper.TranslationList["hideWeatherSw"].ToString();
+                modernStandbySw.Label.Tag = OptionsHelper.TranslationList["modernStandbySw"].ToString();
+                hideSearchSw.Label.Tag = OptionsHelper.TranslationList["hideSearchSw"].ToString();
+                newsInterestsSw.Label.Tag = OptionsHelper.TranslationList["newsInterestsSw"].ToString();
+                enableUtcSw.Label.Tag = OptionsHelper.TranslationList["enableUtcSw"].ToString();
+                regBackupSw.Label.Tag = OptionsHelper.TranslationList["regBackupSw"].ToString();
+            }
+            catch (Exception err)
+            {
+                MessageBox.Show(err.Message);
+            }
         }
 
         private void ToggleSwitch40_Click(object sender, EventArgs e)
         {
             if (castSw.ToggleChecked)
             {
-                Optimize.RemoveCastToDevice();
+                OptimizeHelper.RemoveCastToDevice();
             }
             else
             {
-                Optimize.AddCastToDevice();
+                OptimizeHelper.AddCastToDevice();
             }
-            Options.CurrentOptions.RemoveCastToDevice = castSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.RemoveCastToDevice = castSw.ToggleChecked;
         }
 
         private void ToggleSwitch39_Click(object sender, EventArgs e)
         {
             if (longPathsSw.ToggleChecked)
             {
-                Optimize.EnableLongPaths();
+                OptimizeHelper.EnableLongPaths();
             }
             else
             {
-                Optimize.DisableLongPaths();
+                OptimizeHelper.DisableLongPaths();
             }
-            Options.CurrentOptions.EnableLongPaths = longPathsSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.EnableLongPaths = longPathsSw.ToggleChecked;
         }
 
         private void ToggleSwitch38_Click(object sender, EventArgs e)
         {
             if (stickySw.ToggleChecked)
             {
-                Optimize.DisableStickyKeys();
+                OptimizeHelper.DisableStickyKeys();
             }
             else
             {
-                Optimize.EnableStickyKeys();
+                OptimizeHelper.EnableStickyKeys();
             }
-            Options.CurrentOptions.DisableStickyKeys = stickySw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableStickyKeys = stickySw.ToggleChecked;
         }
 
         private void ToggleSwitch37_Click(object sender, EventArgs e)
         {
             if (ccSw.ToggleChecked)
             {
-                Optimize.DisableCloudClipboard();
+                OptimizeHelper.DisableCloudClipboard();
             }
             else
             {
-                Optimize.EnableCloudClipboard();
+                OptimizeHelper.EnableCloudClipboard();
             }
-            Options.CurrentOptions.DisableCloudClipboard = ccSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableCloudClipboard = ccSw.ToggleChecked;
         }
 
         private void ToggleSwitch36_Click(object sender, EventArgs e)
         {
             if (smartScreenSw.ToggleChecked)
             {
-                Optimize.DisableSmartScreen();
+                OptimizeHelper.DisableSmartScreen();
             }
             else
             {
-                Optimize.EnableSmartScreen();
+                OptimizeHelper.EnableSmartScreen();
             }
-            Options.CurrentOptions.DisableSmartScreen = smartScreenSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableSmartScreen = smartScreenSw.ToggleChecked;
         }
 
         private void ToggleSwitch35_Click(object sender, EventArgs e)
         {
             if (storeUpdatesSw.ToggleChecked)
             {
-                Optimize.DisableStoreUpdates();
+                OptimizeHelper.DisableStoreUpdates();
             }
             else
             {
-                Optimize.EnableStoreUpdates();
+                OptimizeHelper.EnableStoreUpdates();
             }
-            Options.CurrentOptions.DisableStoreUpdates = storeUpdatesSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableStoreUpdates = storeUpdatesSw.ToggleChecked;
         }
 
         private void ToggleSwitch34_Click(object sender, EventArgs e)
         {
             if (insiderSw.ToggleChecked)
             {
-                Optimize.DisableInsiderService();
+                OptimizeHelper.DisableInsiderService();
             }
             else
             {
-                Optimize.EnableInsiderService();
+                OptimizeHelper.EnableInsiderService();
             }
-            Options.CurrentOptions.DisableInsiderService = insiderSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableInsiderService = insiderSw.ToggleChecked;
         }
 
         private void ToggleSwitch33_Click(object sender, EventArgs e)
         {
             if (faxSw.ToggleChecked)
             {
-                Optimize.DisableFaxService();
+                OptimizeHelper.DisableFaxService();
             }
             else
             {
-                Optimize.EnableFaxService();
+                OptimizeHelper.EnableFaxService();
             }
-            Options.CurrentOptions.DisableFaxService = faxSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableFaxService = faxSw.ToggleChecked;
         }
 
-        //INIT
-        public MainForm(SplashForm _splashForm, bool disableIndicium = false, bool disableHostsEditor = false, bool disableCommonApps = false, bool disableUWPApps = false, bool disableStartups = false, bool disableCleaner = false, bool disableIntegrator = false, bool disablePinger = false)
+        //ROOT
+        public MainForm(SplashForm _splashForm, bool? disableIndicium = null, bool? disableHostsEditor = null, bool? disableCommonApps = null, bool? disableUWPApps = null, bool? disableStartups = null, bool? disableCleaner = null, bool? disableIntegrator = null, bool? disablePinger = null)
         {
             InitializeComponent();
 
@@ -735,36 +945,81 @@ namespace Optimizer
 
             CheckForIllegalCrossThreadCalls = false;
 
+            boxLang.Items.AddRange(new string[]
+            {
+                Constants.ENGLISH,
+                Constants.RUSSIAN,
+                Constants.TURKISH,
+                Constants.HELLENIC,
+                Constants.GERMAN,
+                Constants.PORTUGUESE,
+                Constants.FRENCH,
+                Constants.SPANISH,
+                Constants.ITALIAN,
+                Constants.CHINESE,
+                Constants.TAIWANESE,
+                Constants.CZECH,
+                Constants.KOREAN,
+                Constants.POLISH,
+                Constants.ARABIC,
+                Constants.KURDISH,
+                Constants.HUNGARIAN,
+                Constants.ROMANIAN,
+                Constants.DUTCH,
+                Constants.UKRAINIAN,
+                Constants.JAPANESE,
+                Constants.PERSIAN,
+                Constants.NEPALI,
+                Constants.BULGARIAN,
+                Constants.VIETNAMESE,
+                Constants.URDU,
+                Constants.INDONESIAN,
+                Constants.CROATIAN
+            });
+
             _splashForm.LoadingStatus.Text = "checking for requirements";
 
+            // override tool launch configurations
+            _disableStartupTool = (disableStartups.HasValue) ? disableStartups.Value : OptionsHelper.CurrentOptions.DisableStartupTool;
+            _disableUWPApps = (disableUWPApps.HasValue) ? disableUWPApps.Value : OptionsHelper.CurrentOptions.DisableUWPApps;
+            _disableAppsTool = (disableCommonApps.HasValue) ? disableCommonApps.Value : OptionsHelper.CurrentOptions.DisableAppsTool;
+            _disablePinger = (disablePinger.HasValue) ? disablePinger.Value : OptionsHelper.CurrentOptions.DisablePinger;
+            _disableCleaner = (disableCleaner.HasValue) ? disableCleaner.Value : OptionsHelper.CurrentOptions.DisableCleaner;
+            _disableHostsEditor = (disableHostsEditor.HasValue) ? disableHostsEditor.Value : OptionsHelper.CurrentOptions.DisableHostsEditor;
+            _disableIndicium = (disableIndicium.HasValue) ? disableIndicium.Value : OptionsHelper.CurrentOptions.DisableIndicium;
+            _disableIntegrator = (disableIntegrator.HasValue) ? disableIntegrator.Value : OptionsHelper.CurrentOptions.DisableIntegrator;
+
             // theming
-            Options.ApplyTheme(this);
-            pictureBox1.BackColor = Options.CurrentOptions.Theme;
-            colorPicker1.Color = Options.CurrentOptions.Theme;
+            OptionsHelper.ApplyTheme(this);
+            pictureBox1.BackColor = OptionsHelper.CurrentOptions.Theme;
+            colorPicker1.Color = OptionsHelper.CurrentOptions.Theme;
 
             launcherMenu.Renderer = new MoonMenuRenderer();
             indiciumMenu.Renderer = new MoonMenuRenderer();
 
-            progressDownloader.BackColor = Options.ForegroundColor;
-            progressDownloader.ForeColor = Options.ForegroundAccentColor;
+            progressDownloader.BackColor = OptionsHelper.ForegroundColor;
+            progressDownloader.ForeColor = OptionsHelper.ForegroundAccentColor;
 
             // quick access
-            _trayMenu = Options.CurrentOptions.EnableTray;
-            quickAccessToggle.ToggleChecked = Options.CurrentOptions.EnableTray;
-            launcherIcon.Visible = Options.CurrentOptions.EnableTray;
+            _trayMenu = OptionsHelper.CurrentOptions.EnableTray;
+            quickAccessToggle.ToggleChecked = OptionsHelper.CurrentOptions.EnableTray;
+            launcherIcon.Visible = OptionsHelper.CurrentOptions.EnableTray;
+            autoStartToggle.ToggleChecked = OptionsHelper.CurrentOptions.AutoStart;
+            autoUpdateToggle.ToggleChecked = OptionsHelper.CurrentOptions.UpdateOnLaunch;
+            //telemetrySvcToggle.ToggleChecked = Options.CurrentOptions.DisableOptimizerTelemetry;
+
             //seperatorNetMon.Visible = Options.CurrentOptions.EnableTray;
             //trayDownSpeed.Visible = Options.CurrentOptions.EnableTray;
             //trayUpSpeed.Visible = Options.CurrentOptions.EnableTray;
-            autoStartToggle.ToggleChecked = Options.CurrentOptions.AutoStart;
 
             // fix SSL/TLS error when contacting internet
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
 
             // initial states
-
             checkDefaultIcon.Checked = true;
             radioProgram.Checked = true;
             radioTop.Checked = true;
+            disableOneDriveSw.Visible = false;
             c64.Checked = Environment.Is64BitOperatingSystem;
             c32.Checked = !Environment.Is64BitOperatingSystem;
 
@@ -781,7 +1036,6 @@ namespace Optimizer
             if (Utilities.CurrentWindowsVersion == WindowsVersion.Unsupported)
             {
                 tabCollection.TabPages.Remove(universalTab);
-                tabCollection.TabPages.Remove(windows8Tab);
                 tabCollection.TabPages.Remove(windows10Tab);
                 tabCollection.TabPages.Remove(modernAppsTab);
             }
@@ -790,7 +1044,6 @@ namespace Optimizer
             {
                 LoadUniversalToggleStates();
 
-                tabCollection.TabPages.Remove(windows8Tab);
                 tabCollection.TabPages.Remove(windows10Tab);
                 tabCollection.TabPages.Remove(modernAppsTab);
             }
@@ -798,12 +1051,14 @@ namespace Optimizer
             if (Utilities.CurrentWindowsVersion == WindowsVersion.Windows8)
             {
                 LoadUniversalToggleStates();
-                LoadWindowsVIIIToggleStates();
+                LoadWindows8ToggleStates();
+                disableOneDriveSw.Visible = true;
 
                 tabCollection.TabPages.Remove(windows10Tab);
 
-                if (!disableUWPApps)
+                if (!_disableUWPApps)
                 {
+                    chkOnlyRemovable.Visible = false;
                     chkOnlyRemovable.Checked = true;
                 }
                 else
@@ -815,15 +1070,14 @@ namespace Optimizer
             if (Utilities.CurrentWindowsVersion == WindowsVersion.Windows10)
             {
                 LoadUniversalToggleStates();
-                LoadWindowsXToggleStates();
+                LoadWindows10ToggleStates();
 
-                tabCollection.TabPages.Remove(windows8Tab);
                 defenderSw.Visible = false;
                 vbsSw.Visible = false;
                 oldMixerSw.Visible = true;
                 this.Controls.Remove(panelWin11Tweaks);
 
-                if (!disableUWPApps)
+                if (!_disableUWPApps)
                 {
                     chkOnlyRemovable.Checked = true;
                 }
@@ -838,17 +1092,16 @@ namespace Optimizer
             if (Utilities.CurrentWindowsVersion == WindowsVersion.Windows11)
             {
                 LoadUniversalToggleStates();
-                LoadWindowsXToggleStates();
-                LoadWindowsXIToggleStates();
+                LoadWindows10ToggleStates();
+                LoadWindows11ToggleStates();
 
-                tabCollection.TabPages.Remove(windows8Tab);
                 windows10Tab.Text = "Windows 11";
                 defenderSw.Visible = false;
                 vbsSw.Visible = true;
                 panelWin11Tweaks.Visible = true;
                 oldMixerSw.Visible = false;
 
-                if (!disableUWPApps)
+                if (!_disableUWPApps)
                 {
                     chkOnlyRemovable.Checked = true;
                 }
@@ -868,7 +1121,7 @@ namespace Optimizer
             specsTree.ImageList = imagesHw;
 
             // STARTUP ITEMS
-            if (!disableStartups)
+            if (!_disableStartupTool)
             {
                 GetStartupItems();
             }
@@ -879,7 +1132,7 @@ namespace Optimizer
             }
 
             // HOSTS EDITOR
-            if (!disableHostsEditor)
+            if (!_disableHostsEditor)
             {
                 GetHostsEntries();
             }
@@ -890,11 +1143,13 @@ namespace Optimizer
             }
 
             // INTEGRATOR
-            if (!disableIntegrator)
+            if (!_disableIntegrator)
             {
                 LoadReadyMenusState();
                 GetDesktopItems();
                 GetCustomCommands();
+                LoadAvailableFonts();
+                LoadSystemVariables();
             }
             else
             {
@@ -904,9 +1159,10 @@ namespace Optimizer
             _splashForm.LoadingStatus.Text = "fetching feed";
 
             // APPS DOWNLOADER
-            if (!disableCommonApps)
+            if (!_disableAppsTool)
             {
                 GetFeed();
+                txtDownloadFolder.ReadOnly = true;
             }
             else
             {
@@ -915,7 +1171,7 @@ namespace Optimizer
             }
 
             // CLEANER
-            if (!disableCleaner)
+            if (!_disableCleaner)
             {
                 GetFootprint();
             }
@@ -928,7 +1184,7 @@ namespace Optimizer
             _splashForm.LoadingStatus.Text = "inspecting hardware";
 
             // INDICIUM
-            if (!disableIndicium)
+            if (!_disableIndicium)
             {
                 GetHardwareSpecs();
             }
@@ -939,12 +1195,11 @@ namespace Optimizer
             }
 
             // PINGER
-            if (!disablePinger)
+            if (!_disablePinger)
             {
+                boxDNS.Items.AddRange(PingerHelper.DNSOptions);
                 LoadPingerDNSConfig();
                 DisplayCurrentDNS();
-
-                boxDNS.SelectedIndexChanged += boxDNS_SelectedIndexChanged;
                 boxAdapter.SelectedIndexChanged += boxAdapter_SelectedIndexChanged;
             }
             else
@@ -953,35 +1208,31 @@ namespace Optimizer
                 launcherMenu.Items.RemoveByKey("trayPinger");
             }
 
-            Program._MainForm = this;
-
-            if (string.IsNullOrEmpty(Options.CurrentOptions.AppsFolder))
+            // ADVANCED
+            if (Program.UNSAFE_MODE)
             {
-                txtDownloadFolder.Text = Path.Combine(Application.StartupPath, "Optimizer Downloads");
-                Options.CurrentOptions.AppsFolder = Path.Combine(Application.StartupPath, "Optimizer Downloads");
-                Directory.CreateDirectory(Options.CurrentOptions.AppsFolder);
-                Options.SaveSettings();
+                LoadAdvancedToggleStates();
             }
             else
             {
-                if (!Directory.Exists(Options.CurrentOptions.AppsFolder))
-                {
-                    try
-                    {
-                        Directory.CreateDirectory(Options.CurrentOptions.AppsFolder);
-                    }
-                    catch (Exception ex)
-                    {
-                        txtDownloadFolder.Text = string.Empty;
-                        ErrorLogger.LogError("MainForm.INIT", ex.Message, ex.StackTrace);
-                    }
-                }
-                txtDownloadFolder.Text = Options.CurrentOptions.AppsFolder;
+                tabCollection.TabPages.Remove(advancedTab);
             }
 
-            if (!Program.EXPERIMENTAL_BUILD && PingerHelper.IsInternetAvailable())
+            Program._MainForm = this;
+
+            // if AppsFolder is a malformed or non-existent path, reset it to default
+            if (!string.IsNullOrWhiteSpace(OptionsHelper.CurrentOptions.AppsFolder) && !Directory.Exists(OptionsHelper.CurrentOptions.AppsFolder))
             {
-                CheckForUpdate(true);
+                OptionsHelper.CurrentOptions.AppsFolder = string.Empty;
+                OptionsHelper.SaveSettings();
+            }
+
+            if (OptionsHelper.CurrentOptions.UpdateOnLaunch)
+            {
+                if (!Program.EXPERIMENTAL_BUILD && PingerHelper.IsInternetAvailable())
+                {
+                    CheckForUpdate(true);
+                }
             }
 
             if (Program.EXPERIMENTAL_BUILD)
@@ -990,22 +1241,55 @@ namespace Optimizer
                 picLab.Visible = true;
             }
 
-            LoadTranslationAndSetSize();
             //InitNetworkMonitoring();
+            LoadTranslation();
             EnableToggleEvents();
 
-            this.WindowState = FormWindowState.Maximized;
+            WindowState = FormWindowState.Maximized;
+        }
+
+        private void LoadSystemVariables()
+        {
+            listSystemVariables.Items.Clear();
+            _systemVariables = IntegratorHelper.GetPathSystemVariables().ToList();
+            listSystemVariables.Items.AddRange(_systemVariables.ToArray());
+        }
+
+        private void LoadAvailableFonts()
+        {
+            listFonts.Items.Clear();
+            _availableFonts = FontHelper.GetAvailableFonts().ToArray();
+            listFonts.Items.AddRange(_availableFonts);
+            string currentFont = FontHelper.GetCurrentGlobalFont();
+            lblCurrentFont.Text = !string.IsNullOrEmpty(currentFont) ? currentFont : "-";
+            lblFontsNumber.Text = _availableFonts.Length.ToString();
+        }
+
+        private void FixTabHeaderWidth(TabControl tabControl)
+        {
+            int maxTextWidth = 0;
+            int maxTextHeight = 0;
+
+            for (int i = 0; i < tabControl.TabPages.Count; i++)
+            {
+                var tabWidth = TextRenderer.MeasureText(tabControl.TabPages[i]?.Text, tabControl.TabPages[i]?.Font).Width;
+                var tabHeight = TextRenderer.MeasureText(tabControl.TabPages[i]?.Text, tabControl.TabPages[i]?.Font).Height;
+                if (tabWidth > maxTextWidth) maxTextWidth = tabWidth;
+                if (tabHeight > maxTextHeight) maxTextHeight = tabHeight;
+            }
+
+            tabControl.ItemSize = new Size(maxTextWidth + _tabHeaderWidthMargin, maxTextHeight + _tabHeaderHeightMargin);
         }
 
         private void LoadReadyMenusState()
         {
-            AddCMDB.ToggleChecked = Integrator.OpenWithCMDExists();
-            AddOwnerB.ToggleChecked = Integrator.TakeOwnershipExists();
-            DSB.ToggleChecked = Integrator.DesktopItemExists("DesktopShortcuts");
-            PMB.ToggleChecked = Integrator.DesktopItemExists("Power Menu");
-            SSB.ToggleChecked = Integrator.DesktopItemExists("SystemShortcuts");
-            STB.ToggleChecked = Integrator.DesktopItemExists("SystemTools");
-            WAB.ToggleChecked = Integrator.DesktopItemExists("WindowsApps");
+            AddCMDB.ToggleChecked = IntegratorHelper.OpenWithCMDExists();
+            AddOwnerB.ToggleChecked = IntegratorHelper.TakeOwnershipExists();
+            DSB.ToggleChecked = IntegratorHelper.DesktopItemExists("DesktopShortcuts");
+            PMB.ToggleChecked = IntegratorHelper.DesktopItemExists("Power Menu");
+            SSB.ToggleChecked = IntegratorHelper.DesktopItemExists("SystemShortcuts");
+            STB.ToggleChecked = IntegratorHelper.DesktopItemExists("SystemTools");
+            WAB.ToggleChecked = IntegratorHelper.DesktopItemExists("WindowsApps");
         }
 
         private void LoadPingerDNSConfig()
@@ -1037,58 +1321,202 @@ namespace Optimizer
             if (_currentDNS == null) return;
             if (_currentDNS.Length == 0) return;
 
-            if (PingerHelper.CloudflareDNSv4.Any(x => _currentDNS.Select(y => y.ToString()).Contains(x)))
+            if (Array.Exists(PingerHelper.CloudflareDNSv4, x => _currentDNS.Select(y => y.ToString()).Contains(x)))
             {
-                boxDNS.Text = "Cloudflare DNS";
+                boxDNS.Text = Constants.CloudflareDNS;
                 return;
             }
-            else if (PingerHelper.OpenDNSv4.Any(x => _currentDNS.Select(y => y.ToString()).Contains(x)))
+            else if (Array.Exists(PingerHelper.OpenDNSv4, x => _currentDNS.Select(y => y.ToString()).Contains(x)))
             {
-                boxDNS.Text = "Open DNS";
+                boxDNS.Text = Constants.OpenDNS;
                 return;
             }
-            else if (PingerHelper.Quad9DNSv4.Any(x => _currentDNS.Select(y => y.ToString()).Contains(x)))
+            else if (Array.Exists(PingerHelper.Quad9DNSv4, x => _currentDNS.Select(y => y.ToString()).Contains(x)))
             {
-                boxDNS.Text = "Quad9 DNS";
+                boxDNS.Text = Constants.Quad9DNS;
                 return;
             }
-            else if (PingerHelper.GoogleDNSv4.Any(x => _currentDNS.Select(y => y.ToString()).Contains(x)))
+            else if (Array.Exists(PingerHelper.GoogleDNSv4, x => _currentDNS.Select(y => y.ToString()).Contains(x)))
             {
-                boxDNS.Text = "Google DNS";
+                boxDNS.Text = Constants.GoogleDNS;
                 return;
             }
-            else if (PingerHelper.AlternateDNSv4.Any(x => _currentDNS.Select(y => y.ToString()).Contains(x)))
+            else if (Array.Exists(PingerHelper.AlternateDNSv4, x => _currentDNS.Select(y => y.ToString()).Contains(x)))
             {
-                boxDNS.Text = "Alternate DNS";
+                boxDNS.Text = Constants.AlternateDNS;
                 return;
             }
-            else if (PingerHelper.AdguardDNSv4.Any(x => _currentDNS.Select(y => y.ToString()).Contains(x)))
+            else if (Array.Exists(PingerHelper.AdguardDNSv4, x => _currentDNS.Select(y => y.ToString()).Contains(x)))
             {
-                boxDNS.Text = "Adguard DNS";
+                boxDNS.Text = Constants.AdguardDNS;
                 return;
             }
-            else if (PingerHelper.CleanBrowsingDNSv4.Any(x => _currentDNS.Select(y => y.ToString()).Contains(x)))
+            else if (Array.Exists(PingerHelper.CleanBrowsingDNSv4, x => _currentDNS.Select(y => y.ToString()).Contains(x)))
             {
-                boxDNS.Text = "CleanBrowsing";
+                boxDNS.Text = Constants.CleanBrowsingDNS;
                 return;
             }
-            else if (PingerHelper.CleanBrowsingAdultDNSv4.Any(x => _currentDNS.Select(y => y.ToString()).Contains(x)))
+            else if (Array.Exists(PingerHelper.CleanBrowsingAdultDNSv4, x => _currentDNS.Select(y => y.ToString()).Contains(x)))
             {
-                boxDNS.Text = "CleanBrowsing (adult filter)";
+                boxDNS.Text = Constants.CleanBrowsingAdultFilterDNS;
                 return;
             }
             else
             {
-                boxDNS.Text = "Automatic";
+                boxDNS.Text = Constants.CustomDNS;
+                chkCustomDns.Checked = true;
+                try
+                {
+                    if (_currentDNS.Length == 1)
+                    {
+                        linkDNSv4.Text = _currentDNS[0];
+                        txtDns4A.Text = _currentDNS[0];
+                    }
+                    else if (_currentDNS.Length == 2)
+                    {
+                        linkDNSv4.Text = _currentDNS[0];
+                        linkDNSv4A.Text = _currentDNS[1];
+                        txtDns4A.Text = _currentDNS[0];
+                        txtDns4B.Text = _currentDNS[1];
+                    }
+                    else if (_currentDNS.Length == 3)
+                    {
+                        linkDNSv6.Text = _currentDNS[0];
+                        linkDNSv4.Text = _currentDNS[1];
+                        linkDNSv4A.Text = _currentDNS[2];
+                        txtDns6A.Text = _currentDNS[0];
+                        txtDns4A.Text = _currentDNS[1];
+                        txtDns4B.Text = _currentDNS[2];
+                    }
+                    else if (_currentDNS.Length == 4)
+                    {
+                        linkDNSv4.Text = _currentDNS[2];
+                        linkDNSv4A.Text = _currentDNS[3];
+                        linkDNSv6.Text = _currentDNS[0];
+                        linkDNSv6A.Text = _currentDNS[1];
+
+                        txtDns6A.Text = _currentDNS[2];
+                        txtDns6B.Text = _currentDNS[3];
+                        txtDns6A.Text = _currentDNS[0];
+                        txtDns6B.Text = _currentDNS[1];
+                    }
+                }
+                catch { }
                 return;
             }
         }
 
-        private void LoadTranslationAndSetSize()
+        private void SetDNS(string[] v4, string[] v6)
         {
-            if (Options.CurrentOptions.LanguageCode == LanguageCode.EN)
+            if (chkAllNics.Checked)
             {
-                boxLang.Text = "English";
+                PingerHelper.SetDNSForAllNICs(v4, v6);
+            }
+            else
+            {
+                PingerHelper.SetDNS(PingerHelper.NetworkAdapters[boxAdapter.SelectedIndex].Name, v4, v6);
+            }
+            PingerHelper.GetActiveNetworkAdapters();
+            DisplayCurrentDNS();
+        }
+
+        private void ResetDNS()
+        {
+            if (chkAllNics.Checked)
+            {
+                PingerHelper.ResetDefaultDNSForAllNICs();
+            }
+            else
+            {
+                PingerHelper.ResetDefaultDNS(PingerHelper.NetworkAdapters[boxAdapter.SelectedIndex].Name);
+            }
+            PingerHelper.GetActiveNetworkAdapters();
+            DisplayCurrentDNS();
+        }
+
+        private void ApplyCustomDNS()
+        {
+            string[] customDns4 =
+            {
+                txtDns4A.Text,
+                txtDns4B.Text
+            };
+            string[] customDns6 =
+            {
+                txtDns6A.Text,
+                txtDns6B.Text
+            };
+
+            if (Array.Exists(customDns4, x => string.IsNullOrEmpty(x)) || Array.Exists(customDns6, x => string.IsNullOrEmpty(x)))
+            {
+                return;
+            }
+
+            SetDNS(customDns4, customDns6);
+
+            txtDns4A.Text = string.Empty;
+            txtDns4B.Text = string.Empty;
+            txtDns6A.Text = string.Empty;
+            txtDns6B.Text = string.Empty;
+        }
+
+        private void ApplySelectedDNS()
+        {
+            if (boxAdapter.Items.Count <= 0) return;
+            if (boxAdapter.SelectedIndex <= -1) return;
+
+            if (boxDNS.Text == Constants.AutomaticDNS)
+            {
+                ResetDNS();
+                return;
+            }
+            else if (boxDNS.Text == Constants.CloudflareDNS)
+            {
+                SetDNS(PingerHelper.CloudflareDNSv4, PingerHelper.CloudflareDNSv6);
+                return;
+            }
+            else if (boxDNS.Text == Constants.OpenDNS)
+            {
+                SetDNS(PingerHelper.OpenDNSv4, PingerHelper.OpenDNSv6);
+                return;
+            }
+            else if (boxDNS.Text == Constants.Quad9DNS)
+            {
+                SetDNS(PingerHelper.Quad9DNSv4, PingerHelper.Quad9DNSv6);
+                return;
+            }
+            else if (boxDNS.Text == Constants.GoogleDNS)
+            {
+                SetDNS(PingerHelper.GoogleDNSv4, PingerHelper.GoogleDNSv6);
+                return;
+            }
+            else if (boxDNS.Text == Constants.AlternateDNS)
+            {
+                SetDNS(PingerHelper.AlternateDNSv4, PingerHelper.AlternateDNSv6);
+                return;
+            }
+            else if (boxDNS.Text == Constants.AdguardDNS)
+            {
+                SetDNS(PingerHelper.AdguardDNSv4, PingerHelper.AdguardDNSv6);
+                return;
+            }
+            else if (boxDNS.Text == Constants.CleanBrowsingDNS)
+            {
+                SetDNS(PingerHelper.CleanBrowsingDNSv4, PingerHelper.CleanBrowsingDNSv6);
+                return;
+            }
+            else if (boxDNS.Text == Constants.CleanBrowsingAdultFilterDNS)
+            {
+                SetDNS(PingerHelper.CleanBrowsingAdultDNSv4, PingerHelper.CleanBrowsingAdultDNSv6);
+                return;
+            }
+        }
+
+        private void LoadTranslation()
+        {
+            if (OptionsHelper.CurrentOptions.LanguageCode == LanguageCode.EN)
+            {
+                boxLang.Text = Constants.ENGLISH;
                 Translate(true);
             }
             else
@@ -1097,81 +1525,113 @@ namespace Optimizer
             }
 
             // set default window size to fit content
-            if (Options.CurrentOptions.LanguageCode == LanguageCode.RU)
+            if (OptionsHelper.CurrentOptions.LanguageCode == LanguageCode.RU)
             {
-                boxLang.Text = "русский";
+                boxLang.Text = Constants.RUSSIAN;
             }
-            if (Options.CurrentOptions.LanguageCode == LanguageCode.TR)
+            if (OptionsHelper.CurrentOptions.LanguageCode == LanguageCode.TR)
             {
-                boxLang.Text = "Türkçe";
+                boxLang.Text = Constants.TURKISH;
             }
-            if (Options.CurrentOptions.LanguageCode == LanguageCode.EL)
+            if (OptionsHelper.CurrentOptions.LanguageCode == LanguageCode.EL)
             {
-                boxLang.Text = "Ελληνικά";
+                boxLang.Text = Constants.HELLENIC;
             }
-            if (Options.CurrentOptions.LanguageCode == LanguageCode.DE)
+            if (OptionsHelper.CurrentOptions.LanguageCode == LanguageCode.DE)
             {
-                boxLang.Text = "Deutsch";
+                boxLang.Text = Constants.GERMAN;
             }
-            if (Options.CurrentOptions.LanguageCode == LanguageCode.PT)
+            if (OptionsHelper.CurrentOptions.LanguageCode == LanguageCode.PT)
             {
-                boxLang.Text = "Português";
+                boxLang.Text = Constants.PORTUGUESE;
             }
-            if (Options.CurrentOptions.LanguageCode == LanguageCode.FR)
+            if (OptionsHelper.CurrentOptions.LanguageCode == LanguageCode.FR)
             {
-                boxLang.Text = "Français";
+                boxLang.Text = Constants.FRENCH;
             }
-            if (Options.CurrentOptions.LanguageCode == LanguageCode.ES)
+            if (OptionsHelper.CurrentOptions.LanguageCode == LanguageCode.ES)
             {
-                boxLang.Text = "Español";
+                boxLang.Text = Constants.SPANISH;
             }
-            if (Options.CurrentOptions.LanguageCode == LanguageCode.IT)
+            if (OptionsHelper.CurrentOptions.LanguageCode == LanguageCode.IT)
             {
-                boxLang.Text = "Italiano";
+                boxLang.Text = Constants.ITALIAN;
             }
-            if (Options.CurrentOptions.LanguageCode == LanguageCode.CN)
+            if (OptionsHelper.CurrentOptions.LanguageCode == LanguageCode.CN)
             {
-                boxLang.Text = "简体中文";
+                boxLang.Text = Constants.CHINESE;
             }
-            if (Options.CurrentOptions.LanguageCode == LanguageCode.TW)
+            if (OptionsHelper.CurrentOptions.LanguageCode == LanguageCode.TW)
             {
-                boxLang.Text = "繁體中文";
+                boxLang.Text = Constants.TAIWANESE;
             }
-            if (Options.CurrentOptions.LanguageCode == LanguageCode.CZ)
+            if (OptionsHelper.CurrentOptions.LanguageCode == LanguageCode.CZ)
             {
-                boxLang.Text = "Čeština";
+                boxLang.Text = Constants.CZECH;
             }
-            if (Options.CurrentOptions.LanguageCode == LanguageCode.KO)
+            if (OptionsHelper.CurrentOptions.LanguageCode == LanguageCode.KO)
             {
-                boxLang.Text = "한국어";
+                boxLang.Text = Constants.KOREAN;
             }
-            if (Options.CurrentOptions.LanguageCode == LanguageCode.PL)
+            if (OptionsHelper.CurrentOptions.LanguageCode == LanguageCode.PL)
             {
-                boxLang.Text = "Polski";
+                boxLang.Text = Constants.POLISH;
             }
-            if (Options.CurrentOptions.LanguageCode == LanguageCode.AR)
+            if (OptionsHelper.CurrentOptions.LanguageCode == LanguageCode.AR)
             {
-                boxLang.Text = "العربية";
+                boxLang.Text = Constants.ARABIC;
             }
-            if (Options.CurrentOptions.LanguageCode == LanguageCode.KU)
+            if (OptionsHelper.CurrentOptions.LanguageCode == LanguageCode.KU)
             {
-                boxLang.Text = "کوردی";
+                boxLang.Text = Constants.KURDISH;
             }
-            if (Options.CurrentOptions.LanguageCode == LanguageCode.HU)
+            if (OptionsHelper.CurrentOptions.LanguageCode == LanguageCode.HU)
             {
-                boxLang.Text = "Magyar";
+                boxLang.Text = Constants.HUNGARIAN;
             }
-            if (Options.CurrentOptions.LanguageCode == LanguageCode.RO)
+            if (OptionsHelper.CurrentOptions.LanguageCode == LanguageCode.RO)
             {
-                boxLang.Text = "Română";
+                boxLang.Text = Constants.ROMANIAN;
             }
-            if (Options.CurrentOptions.LanguageCode == LanguageCode.NL)
+            if (OptionsHelper.CurrentOptions.LanguageCode == LanguageCode.NL)
             {
-                boxLang.Text = "Nederlands";
+                boxLang.Text = Constants.DUTCH;
             }
-            if (Options.CurrentOptions.LanguageCode == LanguageCode.UA)
+            if (OptionsHelper.CurrentOptions.LanguageCode == LanguageCode.UA)
             {
-                boxLang.Text = "українська";
+                boxLang.Text = Constants.UKRAINIAN;
+            }
+            if (OptionsHelper.CurrentOptions.LanguageCode == LanguageCode.JA)
+            {
+                boxLang.Text = Constants.JAPANESE;
+            }
+            if (OptionsHelper.CurrentOptions.LanguageCode == LanguageCode.FA)
+            {
+                boxLang.Text = Constants.PERSIAN;
+            }
+            if (OptionsHelper.CurrentOptions.LanguageCode == LanguageCode.NE)
+            {
+                boxLang.Text = Constants.NEPALI;
+            }
+            if (OptionsHelper.CurrentOptions.LanguageCode == LanguageCode.BG)
+            {
+                boxLang.Text = Constants.BULGARIAN;
+            }
+            if (OptionsHelper.CurrentOptions.LanguageCode == LanguageCode.VN)
+            {
+                boxLang.Text = Constants.VIETNAMESE;
+            }
+            if (OptionsHelper.CurrentOptions.LanguageCode == LanguageCode.UR)
+            {
+                boxLang.Text = Constants.URDU;
+            }
+            if (OptionsHelper.CurrentOptions.LanguageCode == LanguageCode.ID)
+            {
+                boxLang.Text = Constants.INDONESIAN;
+            }
+            if (OptionsHelper.CurrentOptions.LanguageCode == LanguageCode.HR)
+            {
+                boxLang.Text = Constants.CROATIAN;
             }
         }
 
@@ -1763,83 +2223,9 @@ namespace Optimizer
         //    });
         //}
 
-        //private void TranslateIndicium()
-        //{
-        //    if (hwDetailed.ToggleChecked)
-        //    {
-        //        // DETAILS TRANSLATION
-        //        TreeNode cpu = specsTree.Nodes["cpu"];
-        //        TreeNode ram = specsTree.Nodes["ram"];
-        //        TreeNode gpu = specsTree.Nodes["gpu"];
-        //        TreeNode mobo = specsTree.Nodes["mobo"];
-        //        TreeNode disk = specsTree.Nodes["disk"];
-        //        TreeNode inet = specsTree.Nodes["inet"];
-        //        TreeNode audio = specsTree.Nodes["audio"];
-        //        TreeNode dev = specsTree.Nodes["dev"];
-
-        //        if (cpu != null) cpu.Text = translationList["cpu"];
-        //        if (ram != null)
-        //        {
-        //            ram.Text = translationList["ram"];
-        //            TreeNode vm = ram.Nodes["vm"];
-        //            if (vm != null) vm.Text = translationList["vm"];
-        //        }
-        //        if (gpu != null) gpu.Text = translationList["gpu"];
-        //        if (mobo != null) mobo.Text = translationList["mobo"];
-        //        if (disk != null)
-        //        {
-        //            disk.Text = translationList["disk"];
-        //            TreeNode disks = disk.Nodes["drives"];
-        //            TreeNode vols = disk.Nodes["volumes"];
-        //            TreeNode opticals = disk.Nodes["opticals"];
-        //            TreeNode removables = disk.Nodes["removables"];
-        //            if (disks != null) disks.Text = translationList["drives"];
-        //            if (vols != null) vols.Text = translationList["volumes"];
-        //            if (opticals != null) opticals.Text = translationList["opticals"];
-        //            if (removables != null) removables.Text = translationList["removables"];
-        //        }
-        //        if (inet != null)
-        //        {
-        //            inet.Text = translationList["inet"];
-        //            TreeNode pas = inet.Nodes["physicalAdapters"];
-        //            TreeNode vas = inet.Nodes["virtualAdapters"];
-        //            if (pas != null) pas.Text = translationList["physicalAdapters"];
-        //            if (vas != null) vas.Text = translationList["virtualAdapters"];
-        //        }
-        //        if (audio != null) audio.Text = translationList["audio"];
-        //        if (dev != null)
-        //        {
-        //            dev.Text = translationList["dev"];
-        //            TreeNode kbs = dev.Nodes["keyboards"];
-        //            TreeNode pds = dev.Nodes["pointings"];
-        //            if (kbs != null) kbs.Text = translationList["keyboards"];
-        //            if (pds != null) pds.Text = translationList["pointings"];
-        //        }
-        //    }
-        //    else
-        //    {
-        //        // SUMMARY TRANSLATION
-        //        TreeNode os = specsTree.Nodes["os"];
-        //        TreeNode scpu = specsTree.Nodes["scpu"];
-        //        TreeNode sram = specsTree.Nodes["sram"];
-        //        TreeNode sgpu = specsTree.Nodes["sgpu"];
-        //        TreeNode smobo = specsTree.Nodes["smobo"];
-        //        TreeNode sdisk = specsTree.Nodes["sdisk"];
-        //        TreeNode sinet = specsTree.Nodes["sinet"];
-
-        //        if (os != null) os.Text = translationList["os"];
-        //        if (scpu != null) scpu.Text = translationList["cpu"];
-        //        if (sram != null) sram.Text = translationList["ram"];
-        //        if (sgpu != null) sgpu.Text = translationList["gpu"];
-        //        if (smobo != null) smobo.Text = translationList["mobo"];
-        //        if (sdisk != null) sdisk.Text = translationList["disk"];
-        //        if (sinet != null) sinet.Text = translationList["inet"];
-        //    }
-        //}
-
         private void Translate(bool skipFull = false)
         {
-            translationList = Options.TranslationList.ToObject<Dictionary<string, string>>();
+            translationList = OptionsHelper.TranslationList.ToObject<Dictionary<string, string>>();
 
             if (Environment.Is64BitOperatingSystem)
             {
@@ -1855,17 +2241,19 @@ namespace Optimizer
 
             if (!skipFull)
             {
-                _noNewVersionMessage = Options.TranslationList["noNewVersion"];
-                _betaVersionMessage = Options.TranslationList["betaVersion"];
-                _newVersionMessage = Options.TranslationList["newVersion"];
-                _restartMessage = Options.TranslationList["restartAndApply"];
-                _removeStartupItemsMessage = Options.TranslationList["removeAllStartup"];
-                _removeHostsEntriesMessage = Options.TranslationList["removeAllHosts"];
-                _removeDesktopItemsMessage = Options.TranslationList["removeAllItems"];
-                _removeModernAppsMessage = Options.TranslationList["removeModernApps"];
-                _errorModernAppsMessage = Options.TranslationList["errorModernApps"];
-                _repairMessage = Options.TranslationList["resetMessage"];
-                _flushDNSMessage = Options.TranslationList["flushDNSMessage"];
+                _noNewVersionMessage = OptionsHelper.TranslationList["noNewVersion"];
+                _betaVersionMessage = OptionsHelper.TranslationList["betaVersion"];
+                _newVersionMessage = OptionsHelper.TranslationList["newVersion"];
+                _restartMessage = OptionsHelper.TranslationList["restartAndApply"];
+                _removeStartupItemsMessage = OptionsHelper.TranslationList["removeAllStartup"];
+                _removeHostsEntriesMessage = OptionsHelper.TranslationList["removeAllHosts"];
+                _removeDesktopItemsMessage = OptionsHelper.TranslationList["removeAllItems"];
+                _removeModernAppsMessage = OptionsHelper.TranslationList["removeModernApps"];
+                _errorModernAppsMessage = OptionsHelper.TranslationList["errorModernApps"];
+                _repairMessage = OptionsHelper.TranslationList["resetMessage"];
+                _uwpRestoreMessage = OptionsHelper.TranslationList["restoreUwpMessage"];
+                _reinforcePoliciesMessage = OptionsHelper.TranslationList["msgReinforce"];
+                _flushDNSMessage = OptionsHelper.TranslationList["flushDNSMessage"];
 
                 listStartupItems.Columns[0].Text = translationList["startupItemName"];
                 listStartupItems.Columns[1].Text = translationList["startupItemLocation"];
@@ -1896,7 +2284,6 @@ namespace Optimizer
                 label18.Text = translationList["subTouch"];
                 label19.Text = translationList["subTaskbar"];
                 label20.Text = translationList["subExtras"];
-                label21.Text = translationList["subSystem"];
 
                 Control element;
                 foreach (var x in translationList)
@@ -1906,9 +2293,9 @@ namespace Optimizer
 
                     if (element == null) continue;
 
-                    if (element is ToggleCard)
+                    if (element is ToggleCard tc)
                     {
-                        ((ToggleCard)element).LabelText = x.Value;
+                        tc.LabelText = x.Value;
                         continue;
                     }
 
@@ -1949,7 +2336,7 @@ namespace Optimizer
                     try
                     {
                         string feed = client.DownloadString(_feedLink);
-                        AppsFromFeed = JsonConvert.DeserializeObject<List<FeedApp>>(feed);
+                        AppsFromFeed = JsonConvert.DeserializeObject<List<AppInfo>>(feed);
 
                         AppCard appCard;
                         groupSystemTools.Controls.Clear();
@@ -1957,7 +2344,7 @@ namespace Optimizer
                         groupCoding.Controls.Clear();
                         groupSoundVideo.Controls.Clear();
 
-                        foreach (FeedApp x in AppsFromFeed)
+                        foreach (AppInfo x in AppsFromFeed)
                         {
                             appCard = new AppCard();
                             appCard.AutoSize = true;
@@ -1973,19 +2360,19 @@ namespace Optimizer
                             switch (x.Group)
                             {
                                 case "SystemTools":
-                                    appCard.Location = new Point(0, groupSystemTools.Controls.Count * (Program.DPI_PREFERENCE / 3));
+                                    appCard.Location = new Point(0, groupSystemTools.Controls.Count * GetItemPadding());
                                     groupSystemTools.Controls.Add(appCard);
                                     break;
                                 case "Internet":
-                                    appCard.Location = new Point(0, groupInternet.Controls.Count * (Program.DPI_PREFERENCE / 3));
+                                    appCard.Location = new Point(0, groupInternet.Controls.Count * GetItemPadding());
                                     groupInternet.Controls.Add(appCard);
                                     break;
                                 case "Coding":
-                                    appCard.Location = new Point(0, groupCoding.Controls.Count * (Program.DPI_PREFERENCE / 3));
+                                    appCard.Location = new Point(0, groupCoding.Controls.Count * GetItemPadding());
                                     groupCoding.Controls.Add(appCard);
                                     break;
                                 case "GraphicsSound":
-                                    appCard.Location = new Point(0, groupSoundVideo.Controls.Count * (Program.DPI_PREFERENCE / 3));
+                                    appCard.Location = new Point(0, groupSoundVideo.Controls.Count * GetItemPadding());
                                     groupSoundVideo.Controls.Add(appCard);
                                     break;
                                 default:
@@ -2002,7 +2389,7 @@ namespace Optimizer
                         btnDownloadApps.Enabled = false;
                         txtFeedError.Visible = true;
 
-                        ErrorLogger.LogError("MainForm.GetFeed", ex.Message, ex.StackTrace);
+                        Logger.LogError("MainForm.GetFeed", ex.Message, ex.StackTrace);
                     }
                 }
             }
@@ -2011,7 +2398,7 @@ namespace Optimizer
                 btnDownloadApps.Enabled = false;
                 txtFeedError.Visible = true;
 
-                ErrorLogger.LogError("MainForm.GetFeed-DownloadImages", ex.Message, ex.StackTrace);
+                Logger.LogError("MainForm.GetFeed-DownloadImages", ex.Message, ex.StackTrace);
             }
         }
 
@@ -2030,7 +2417,7 @@ namespace Optimizer
             }
             catch (Exception ex)
             {
-                ErrorLogger.LogError("MainForm.CleanPC", ex.Message, ex.StackTrace);
+                Logger.LogError("MainForm.CleanPC", ex.Message, ex.StackTrace);
             }
             finally
             {
@@ -2112,94 +2499,118 @@ namespace Optimizer
             }
             catch (Exception ex)
             {
-                ErrorLogger.LogError("MainForm.FixRegistry", ex.Message, ex.StackTrace);
+                Logger.LogError("MainForm.FixRegistry", ex.Message, ex.StackTrace);
             }
 
             return changeDetected;
         }
 
+        private void LoadAdvancedToggleStates()
+        {
+            hpetSw.ToggleChecked = OptionsHelper.CurrentOptions.DisableHPET;
+            loginVerboseSw.ToggleChecked = OptionsHelper.CurrentOptions.EnableLoginVerbose;
+            regBackupSw.ToggleChecked = OptionsHelper.CurrentOptions.EnableRegistryBackups;
+        }
+
         private void LoadUniversalToggleStates()
         {
-            performanceSw.ToggleChecked = Options.CurrentOptions.EnablePerformanceTweaks;
-            networkSw.ToggleChecked = Options.CurrentOptions.DisableNetworkThrottling;
-            defenderSw.ToggleChecked = Options.CurrentOptions.DisableWindowsDefender;
-            systemRestoreSw.ToggleChecked = Options.CurrentOptions.DisableSystemRestore;
-            printSw.ToggleChecked = Options.CurrentOptions.DisablePrintService;
-            mediaSharingSw.ToggleChecked = Options.CurrentOptions.DisableMediaPlayerSharing;
-            reportingSw.ToggleChecked = Options.CurrentOptions.DisableErrorReporting;
-            homegroupSw.ToggleChecked = Options.CurrentOptions.DisableHomeGroup;
-            superfetchSw.ToggleChecked = Options.CurrentOptions.DisableSuperfetch;
-            telemetryTasksSw.ToggleChecked = Options.CurrentOptions.DisableTelemetryTasks;
-            officeTelemetrySw.ToggleChecked = Options.CurrentOptions.DisableOffice2016Telemetry;
-            compatSw.ToggleChecked = Options.CurrentOptions.DisableCompatibilityAssistant;
-            faxSw.ToggleChecked = Options.CurrentOptions.DisableFaxService;
-            smartScreenSw.ToggleChecked = Options.CurrentOptions.DisableSmartScreen;
-            stickySw.ToggleChecked = Options.CurrentOptions.DisableStickyKeys;
-            hibernateSw.ToggleChecked = Options.CurrentOptions.DisableHibernation;
-            smb1Sw.ToggleChecked = Options.CurrentOptions.DisableSMB1;
-            smb2Sw.ToggleChecked = Options.CurrentOptions.DisableSMB2;
-            ntfsStampSw.ToggleChecked = Options.CurrentOptions.DisableNTFSTimeStamp;
-            winSearchSw.ToggleChecked = Options.CurrentOptions.DisableSearch;
-            ffTelemetrySw.ToggleChecked = Options.CurrentOptions.DisableFirefoxTemeletry;
-            vsSw.ToggleChecked = Options.CurrentOptions.DisableVisualStudioTelemetry;
-            chromeTelemetrySw.ToggleChecked = Options.CurrentOptions.DisableChromeTelemetry;
-            nvidiaTelemetrySw.ToggleChecked = Options.CurrentOptions.DisableNVIDIATelemetry;
+            performanceSw.ToggleChecked = OptionsHelper.CurrentOptions.EnablePerformanceTweaks;
+            allTrayIconsSw.ToggleChecked = OptionsHelper.CurrentOptions.ShowAllTrayIcons;
+            noMenuDelaySw.ToggleChecked = OptionsHelper.CurrentOptions.RemoveMenusDelay;
+            networkSw.ToggleChecked = OptionsHelper.CurrentOptions.DisableNetworkThrottling;
+            defenderSw.ToggleChecked = OptionsHelper.CurrentOptions.DisableWindowsDefender;
+            systemRestoreSw.ToggleChecked = OptionsHelper.CurrentOptions.DisableSystemRestore;
+            printSw.ToggleChecked = OptionsHelper.CurrentOptions.DisablePrintService;
+            mediaSharingSw.ToggleChecked = OptionsHelper.CurrentOptions.DisableMediaPlayerSharing;
+            reportingSw.ToggleChecked = OptionsHelper.CurrentOptions.DisableErrorReporting;
+            homegroupSw.ToggleChecked = OptionsHelper.CurrentOptions.DisableHomeGroup;
+            superfetchSw.ToggleChecked = OptionsHelper.CurrentOptions.DisableSuperfetch;
+            telemetryTasksSw.ToggleChecked = OptionsHelper.CurrentOptions.DisableTelemetryTasks;
+            officeTelemetrySw.ToggleChecked = OptionsHelper.CurrentOptions.DisableOffice2016Telemetry;
+            compatSw.ToggleChecked = OptionsHelper.CurrentOptions.DisableCompatibilityAssistant;
+            faxSw.ToggleChecked = OptionsHelper.CurrentOptions.DisableFaxService;
+            smartScreenSw.ToggleChecked = OptionsHelper.CurrentOptions.DisableSmartScreen;
+            stickySw.ToggleChecked = OptionsHelper.CurrentOptions.DisableStickyKeys;
+            hibernateSw.ToggleChecked = OptionsHelper.CurrentOptions.DisableHibernation;
+            smb1Sw.ToggleChecked = OptionsHelper.CurrentOptions.DisableSMB1;
+            smb2Sw.ToggleChecked = OptionsHelper.CurrentOptions.DisableSMB2;
+            ntfsStampSw.ToggleChecked = OptionsHelper.CurrentOptions.DisableNTFSTimeStamp;
+            winSearchSw.ToggleChecked = OptionsHelper.CurrentOptions.DisableSearch;
+            ffTelemetrySw.ToggleChecked = OptionsHelper.CurrentOptions.DisableFirefoxTemeletry;
+            vsSw.ToggleChecked = OptionsHelper.CurrentOptions.DisableVisualStudioTelemetry;
+            chromeTelemetrySw.ToggleChecked = OptionsHelper.CurrentOptions.DisableChromeTelemetry;
+            nvidiaTelemetrySw.ToggleChecked = OptionsHelper.CurrentOptions.DisableNVIDIATelemetry;
+            enableUtcSw.ToggleChecked = OptionsHelper.CurrentOptions.EnableUtcTime;
         }
 
-        private void LoadWindowsVIIIToggleStates()
+        private void LoadWindows8ToggleStates()
         {
-            disableOneDriveSw.ToggleChecked = Options.CurrentOptions.DisableOneDrive;
+            disableOneDriveSw.ToggleChecked = OptionsHelper.CurrentOptions.DisableOneDrive;
         }
 
-        private void LoadWindowsXToggleStates()
+        private void LoadWindows10ToggleStates()
         {
-            oldMixerSw.ToggleChecked = Options.CurrentOptions.EnableLegacyVolumeSlider;
-            uODSw.ToggleChecked = Options.CurrentOptions.UninstallOneDrive;
-            gameBarSw.ToggleChecked = Options.CurrentOptions.DisableGameBar;
-            cortanaSw.ToggleChecked = Options.CurrentOptions.DisableCortana;
-            xboxSw.ToggleChecked = Options.CurrentOptions.DisableXboxLive;
-            oldExplorerSw.ToggleChecked = Options.CurrentOptions.DisableQuickAccessHistory;
-            sensorSw.ToggleChecked = Options.CurrentOptions.DisableSensorServices;
-            privacySw.ToggleChecked = Options.CurrentOptions.DisablePrivacyOptions;
-            telemetryServicesSw.ToggleChecked = Options.CurrentOptions.DisableTelemetryServices;
-            autoUpdatesSw.ToggleChecked = Options.CurrentOptions.DisableAutomaticUpdates;
-            peopleSw.ToggleChecked = Options.CurrentOptions.DisableMyPeople;
-            adsSw.ToggleChecked = Options.CurrentOptions.DisableStartMenuAds;
-            spellSw.ToggleChecked = Options.CurrentOptions.DisableSpellingTyping;
-            inkSw.ToggleChecked = Options.CurrentOptions.DisableWindowsInk;
-            driversSw.ToggleChecked = Options.CurrentOptions.ExcludeDrivers;
-            insiderSw.ToggleChecked = Options.CurrentOptions.DisableInsiderService;
-            storeUpdatesSw.ToggleChecked = Options.CurrentOptions.DisableStoreUpdates;
-            ccSw.ToggleChecked = Options.CurrentOptions.DisableCloudClipboard;
-            longPathsSw.ToggleChecked = Options.CurrentOptions.EnableLongPaths;
-            castSw.ToggleChecked = Options.CurrentOptions.RemoveCastToDevice;
-            gameModeSw.ToggleChecked = Options.CurrentOptions.EnableGamingMode;
-            tpmSw.ToggleChecked = Options.CurrentOptions.DisableTPMCheck;
+            oldMixerSw.ToggleChecked = OptionsHelper.CurrentOptions.EnableLegacyVolumeSlider;
+            uODSw.ToggleChecked = OptionsHelper.CurrentOptions.UninstallOneDrive;
+            gameBarSw.ToggleChecked = OptionsHelper.CurrentOptions.DisableGameBar;
+            cortanaSw.ToggleChecked = OptionsHelper.CurrentOptions.DisableCortana;
+            edgeTelemetrySw.ToggleChecked = OptionsHelper.CurrentOptions.DisableEdgeTelemetry;
+            edgeAiSw.ToggleChecked = OptionsHelper.CurrentOptions.DisableEdgeDiscoverBar;
+            xboxSw.ToggleChecked = OptionsHelper.CurrentOptions.DisableXboxLive;
+            oldExplorerSw.ToggleChecked = OptionsHelper.CurrentOptions.DisableQuickAccessHistory;
+            sensorSw.ToggleChecked = OptionsHelper.CurrentOptions.DisableSensorServices;
+            privacySw.ToggleChecked = OptionsHelper.CurrentOptions.DisablePrivacyOptions;
+            telemetryServicesSw.ToggleChecked = OptionsHelper.CurrentOptions.DisableTelemetryServices;
+            autoUpdatesSw.ToggleChecked = OptionsHelper.CurrentOptions.DisableAutomaticUpdates;
+            peopleSw.ToggleChecked = OptionsHelper.CurrentOptions.DisableMyPeople;
+            adsSw.ToggleChecked = OptionsHelper.CurrentOptions.DisableStartMenuAds;
+            spellSw.ToggleChecked = OptionsHelper.CurrentOptions.DisableSpellingTyping;
+            inkSw.ToggleChecked = OptionsHelper.CurrentOptions.DisableWindowsInk;
+            driversSw.ToggleChecked = OptionsHelper.CurrentOptions.ExcludeDrivers;
+            insiderSw.ToggleChecked = OptionsHelper.CurrentOptions.DisableInsiderService;
+            storeUpdatesSw.ToggleChecked = OptionsHelper.CurrentOptions.DisableStoreUpdates;
+            ccSw.ToggleChecked = OptionsHelper.CurrentOptions.DisableCloudClipboard;
+            longPathsSw.ToggleChecked = OptionsHelper.CurrentOptions.EnableLongPaths;
+            castSw.ToggleChecked = OptionsHelper.CurrentOptions.RemoveCastToDevice;
+            gameModeSw.ToggleChecked = OptionsHelper.CurrentOptions.EnableGamingMode;
+            tpmSw.ToggleChecked = OptionsHelper.CurrentOptions.DisableTPMCheck;
+            classicPhotoViewerSw.ToggleChecked = OptionsHelper.CurrentOptions.RestoreClassicPhotoViewer;
+            modernStandbySw.ToggleChecked = OptionsHelper.CurrentOptions.DisableModernStandby;
+            hideWeatherSw.ToggleChecked = OptionsHelper.CurrentOptions.HideTaskbarWeather;
+            hideSearchSw.ToggleChecked = OptionsHelper.CurrentOptions.HideTaskbarSearch;
+            newsInterestsSw.ToggleChecked = OptionsHelper.CurrentOptions.DisableNewsInterests;
         }
 
-        private void LoadWindowsXIToggleStates()
+        private void LoadWindows11ToggleStates()
         {
-            leftTaskbarSw.ToggleChecked = Options.CurrentOptions.TaskbarToLeft;
-            snapAssistSw.ToggleChecked = Options.CurrentOptions.DisableSnapAssist;
-            widgetsSw.ToggleChecked = Options.CurrentOptions.DisableWidgets;
-            chatSw.ToggleChecked = Options.CurrentOptions.DisableChat;
-            stickersSw.ToggleChecked = Options.CurrentOptions.DisableStickers;
-            smallerTaskbarSw.ToggleChecked = Options.CurrentOptions.TaskbarSmaller;
-            classicRibbonSw.ToggleChecked = Options.CurrentOptions.ClassicRibbon;
-            classicContextSw.ToggleChecked = Options.CurrentOptions.ClassicMenu;
-            tpmSw.ToggleChecked = Options.CurrentOptions.DisableTPMCheck;
-            compactModeSw.ToggleChecked = Options.CurrentOptions.CompactMode;
-            vbsSw.ToggleChecked = Options.CurrentOptions.DisableVBS;
+            leftTaskbarSw.ToggleChecked = OptionsHelper.CurrentOptions.TaskbarToLeft;
+            snapAssistSw.ToggleChecked = OptionsHelper.CurrentOptions.DisableSnapAssist;
+            widgetsSw.ToggleChecked = OptionsHelper.CurrentOptions.DisableWidgets;
+            chatSw.ToggleChecked = OptionsHelper.CurrentOptions.DisableChat;
+            stickersSw.ToggleChecked = OptionsHelper.CurrentOptions.DisableStickers;
+            classicContextSw.ToggleChecked = OptionsHelper.CurrentOptions.ClassicMenu;
+            tpmSw.ToggleChecked = OptionsHelper.CurrentOptions.DisableTPMCheck;
+            compactModeSw.ToggleChecked = OptionsHelper.CurrentOptions.CompactMode;
+            vbsSw.ToggleChecked = OptionsHelper.CurrentOptions.DisableVBS;
+            copilotSw.ToggleChecked = OptionsHelper.CurrentOptions.DisableCoPilotAI;
         }
 
         private void Main_Load(object sender, EventArgs e)
         {
+            FixTabHeaderWidth(tabCollection);
+            FixTabHeaderWidth(synapse);
 
+            if (OptionsHelper.CurrentOptions.AutoStart && OptionsHelper.CurrentOptions.EnableTray)
+            {
+                this.Hide();
+            }
+
+            //DebugHelper.FindDifferenceInTwoJsons();
         }
 
         private void GetDesktopItems()
         {
-            _desktopItems = Integrator.GetDesktopItems();
+            _desktopItems = IntegratorHelper.GetDesktopItems();
             listDesktopItems.Items.Clear();
 
             for (int i = 0; i < _desktopItems.Count; i++)
@@ -2251,6 +2662,11 @@ namespace Optimizer
 
                 listStartupItems.Items.Add(list);
             }
+
+            foreach (ColumnHeader column in listStartupItems.Columns)
+            {
+                column.AutoResize(ColumnHeaderAutoResizeStyle.HeaderSize);
+            }
         }
 
         private void GetModernApps(bool showAll)
@@ -2266,7 +2682,6 @@ namespace Optimizer
 
             foreach (var x in _modernApps)
             {
-
                 appCard = new AppCard();
                 appCard.AutoSize = true;
                 appCard.Anchor = AnchorStyles.None;
@@ -2278,12 +2693,13 @@ namespace Optimizer
                 try
                 {
                     pngTmp = new DirectoryInfo(x.Value)
-                    .EnumerateFiles("*.png", SearchOption.AllDirectories)
-                    .OrderByDescending(f => f.Length)
-                    .FirstOrDefault();
+                        .EnumerateFiles("*.png", SearchOption.AllDirectories)
+                        .OrderByDescending(f => f.Length)
+                        .FirstOrDefault();
                 }
-                catch
+                catch (Exception ex)
                 {
+                    Logger.LogError("MainForm.GetModernApps-ImageSearch", ex.Message, ex.StackTrace);
                     pngTmp = null;
                 }
 
@@ -2291,14 +2707,19 @@ namespace Optimizer
                 {
                     try
                     {
-                        appCard.appImage.Image = Image.FromFile(pngTmp.FullName);
+                        using (FileStream fs = new FileStream(pngTmp.FullName, FileMode.Open, FileAccess.Read))
+                        {
+                            appCard.appImage.Image = Image.FromStream(fs);
+                        }
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        Logger.LogError("MainForm.GetModernApps-ImageLoad", ex.Message, ex.StackTrace);
+                    }
                 }
 
-                appCard.Location = new Point(0, panelUwp.Controls.Count * (Program.DPI_PREFERENCE / 3));
+                appCard.Location = new Point(0, panelUwp.Controls.Count * GetItemPadding());
                 panelUwp.Controls.Add(appCard);
-
             }
 
             uninstallModernAppsButton.Enabled = true;
@@ -2320,7 +2741,7 @@ namespace Optimizer
 
             if (selectedApps.Count <= 0) return;
 
-            if (MessageBox.Show(_removeModernAppsMessage + "\n\n" + string.Join(Environment.NewLine, selectedApps), "Optimizer", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            if (MessageBox.Show(_removeModernAppsMessage, "Optimizer", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
                 uninstallModernAppsButton.Enabled = false;
                 refreshModernAppsButton.Enabled = false;
@@ -2349,7 +2770,7 @@ namespace Optimizer
 
         private void GetCustomCommands()
         {
-            _customCommands = Integrator.GetCustomCommands();
+            _customCommands = IntegratorHelper.GetCustomCommands();
             listCustomCommands.Items.Clear();
 
             foreach (string s in _customCommands)
@@ -2369,8 +2790,8 @@ namespace Optimizer
             }
             else
             {
-                Options.CurrentOptions.AppsFolder = txtDownloadFolder.Text;
-                Options.SaveSettings();
+                OptionsHelper.CurrentOptions.AppsFolder = txtDownloadFolder.Text;
+                OptionsHelper.SaveSettings();
             }
         }
 
@@ -2386,23 +2807,17 @@ namespace Optimizer
             }
             if (MessageBox.Show(_removeStartupItemsMessage + Environment.NewLine + Environment.NewLine + report, "Optimizer", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
-                foreach (int x in listStartupItems.CheckedIndices)
+                foreach (ListViewItem x in listStartupItems.CheckedItems)
                 {
-                    _startUpItems[x].Remove();
+                    var item = _startUpItems.Find(y => y.Name == x.Text);
+                    if (item != null)
+                    {
+                        item.Remove();
+                    }
                 }
 
                 GetStartupItems();
             }
-
-            //foreach (int x in listStartupItems.CheckedIndices)
-            //{
-            //    MessageBox.Show(x.ToString());
-            //}
-            //if (listStartupItems.SelectedItems.Count == 1)
-            //{
-            //    _startUpItems[listStartupItems.SelectedIndices[0]].Remove();
-            //    GetStartupItems();
-            //}
         }
 
         internal void RemoveAllStartupItems()
@@ -2414,16 +2829,6 @@ namespace Optimizer
 
             GetStartupItems();
         }
-
-        // REMOVE ALL STARTUP ITEMS BUTTON
-        //private void button22_Click(object sender, EventArgs e)
-        //{
-        //    if (listStartupItems.Items.Count > 0)
-        //    {
-        //        HelperForm r = new HelperForm(this, MessageType.Startup, _removeStartupItemsMessage);
-        //        r.ShowDialog(this);
-        //    }
-        //}
 
         private void button31_Click(object sender, EventArgs e)
         {
@@ -2501,6 +2906,11 @@ namespace Optimizer
                 string domain = txtDomain.Text.Trim();
 
                 HostsHelper.AddEntry(HostsHelper.SanitizeEntry(ip) + " " + HostsHelper.SanitizeEntry(domain));
+                if (chkIncludeWww.Checked)
+                {
+                    domain = $"www.{domain}";
+                    HostsHelper.AddEntry(HostsHelper.SanitizeEntry(ip) + " " + HostsHelper.SanitizeEntry(domain));
+                }
 
                 GetHostsEntries();
 
@@ -2563,7 +2973,7 @@ namespace Optimizer
         {
             if (!string.IsNullOrEmpty(txtRunFile.Text) && !string.IsNullOrEmpty(txtRunKeyword.Text))
             {
-                Integrator.CreateCustomCommand(txtRunFile.Text, txtRunKeyword.Text);
+                IntegratorHelper.CreateCustomCommand(txtRunFile.Text, txtRunKeyword.Text);
 
                 txtRunFile.Clear();
                 txtRunKeyword.Clear();
@@ -2587,7 +2997,7 @@ namespace Optimizer
         {
             if (listDesktopItems.SelectedItems.Count == 1)
             {
-                Integrator.RemoveItem(listDesktopItems.SelectedItem.ToString());
+                IntegratorHelper.RemoveItem(listDesktopItems.SelectedItem.ToString());
                 GetDesktopItems();
             }
         }
@@ -2600,7 +3010,7 @@ namespace Optimizer
                 collection.Add(item);
             }
 
-            Integrator.RemoveAllItems(collection);
+            IntegratorHelper.RemoveAllItems(collection);
 
             GetDesktopItems();
         }
@@ -2623,9 +3033,9 @@ namespace Optimizer
                 checkDefaultIcon.Checked = true;
                 txtIcon.Enabled = false;
                 btnBrowseIcon.Enabled = false;
-                itemtoaddgroup.Text = Options.TranslationList["itemtoaddgroup"];
+                itemtoaddgroup.Text = OptionsHelper.TranslationList["itemtoaddgroup"];
                 checkDefaultIcon.Visible = true;
-                checkDefaultIcon.Text = Options.TranslationList["checkDefaultIcon"];
+                checkDefaultIcon.Text = OptionsHelper.TranslationList["checkDefaultIcon"];
                 txtItemName.Clear();
                 txtItem.ReadOnly = true;
                 txtIcon.ReadOnly = true;
@@ -2640,8 +3050,8 @@ namespace Optimizer
                 checkDefaultIcon.Checked = true;
                 btnBrowseItem.Enabled = true;
                 txtItem.Clear();
-                itemtoaddgroup.Text = Options.TranslationList["folderToAdd"];
-                checkDefaultIcon.Text = Options.TranslationList["checkDefaultFolderIcon"];
+                itemtoaddgroup.Text = OptionsHelper.TranslationList["folderToAdd"];
+                checkDefaultIcon.Text = OptionsHelper.TranslationList["checkDefaultFolderIcon"];
                 txtItemName.Clear();
                 txtItem.ReadOnly = true;
                 txtIcon.ReadOnly = true;
@@ -2654,9 +3064,9 @@ namespace Optimizer
             if (radioLink.Checked)
             {
                 checkDefaultIcon.Checked = true;
-                checkDefaultIcon.Text = Options.TranslationList["checkFavicon"];
+                checkDefaultIcon.Text = OptionsHelper.TranslationList["checkFavicon"];
                 btnBrowseItem.Enabled = false;
-                itemtoaddgroup.Text = Options.TranslationList["linkToAdd"];
+                itemtoaddgroup.Text = OptionsHelper.TranslationList["linkToAdd"];
                 checkDefaultIcon.Visible = true;
                 txtItem.Text = "http://";
                 txtItemName.Clear();
@@ -2671,9 +3081,9 @@ namespace Optimizer
             if (radioFile.Checked)
             {
                 checkDefaultIcon.Checked = true;
-                checkDefaultIcon.Text = Options.TranslationList["checkNoIcon"];
+                checkDefaultIcon.Text = OptionsHelper.TranslationList["checkNoIcon"];
                 btnBrowseItem.Enabled = true;
-                itemtoaddgroup.Text = Options.TranslationList["fileToAdd"];
+                itemtoaddgroup.Text = OptionsHelper.TranslationList["fileToAdd"];
                 checkDefaultIcon.Visible = true;
                 txtItem.Clear();
                 txtItemName.Clear();
@@ -2692,9 +3102,9 @@ namespace Optimizer
                 checkDefaultIcon.Checked = true;
                 txtIcon.Enabled = false;
                 btnBrowseIcon.Enabled = false;
-                itemtoaddgroup.Text = Options.TranslationList["commandToAdd"];
+                itemtoaddgroup.Text = OptionsHelper.TranslationList["commandToAdd"];
                 checkDefaultIcon.Visible = true;
-                checkDefaultIcon.Text = Options.TranslationList["checkNoIcon"];
+                checkDefaultIcon.Text = OptionsHelper.TranslationList["checkNoIcon"];
                 txtItemName.Clear();
                 txtItem.ReadOnly = false;
                 txtIcon.ReadOnly = true;
@@ -2777,7 +3187,7 @@ namespace Optimizer
 
             if (txtIcon.Text.Contains(".exe"))
             {
-                string iconpath = Integrator.ExtractIconFromExecutable(txtItemName.Text, DefineProgramIconDialog.FileName);
+                string iconpath = IntegratorHelper.ExtractIconFromExecutable(txtItemName.Text, DefineProgramIconDialog.FileName);
                 txtIcon.Text = iconpath;
             }
         }
@@ -2788,7 +3198,7 @@ namespace Optimizer
 
             if (txtIcon.Text.Contains(".exe"))
             {
-                string iconpath = Integrator.ExtractIconFromExecutable(txtItemName.Text, DefineFolderIconDialog.FileName);
+                string iconpath = IntegratorHelper.ExtractIconFromExecutable(txtItemName.Text, DefineFolderIconDialog.FileName);
                 txtIcon.Text = iconpath;
             }
         }
@@ -2799,7 +3209,7 @@ namespace Optimizer
 
             if (txtIcon.Text.Contains(".exe"))
             {
-                string iconpath = Integrator.ExtractIconFromExecutable(txtItemName.Text, DefineURLIconDialog.FileName);
+                string iconpath = IntegratorHelper.ExtractIconFromExecutable(txtItemName.Text, DefineURLIconDialog.FileName);
                 txtIcon.Text = iconpath;
             }
         }
@@ -2810,7 +3220,7 @@ namespace Optimizer
 
             if (txtIcon.Text.Contains(".exe"))
             {
-                string iconpath = Integrator.ExtractIconFromExecutable(txtItemName.Text, DefineFileIconDialog.FileName);
+                string iconpath = IntegratorHelper.ExtractIconFromExecutable(txtItemName.Text, DefineFileIconDialog.FileName);
                 txtIcon.Text = iconpath;
             }
         }
@@ -2821,7 +3231,7 @@ namespace Optimizer
 
             if (txtIcon.Text.Contains(".exe"))
             {
-                string iconpath = Integrator.ExtractIconFromExecutable(txtItemName.Text, DefineCommandIconDialog.FileName);
+                string iconpath = IntegratorHelper.ExtractIconFromExecutable(txtItemName.Text, DefineCommandIconDialog.FileName);
                 txtIcon.Text = iconpath;
             }
         }
@@ -2852,33 +3262,33 @@ namespace Optimizer
                         icon = txtIcon.Text;
                     }
 
-                    Integrator.AddItem(txtItemName.Text, txtItem.Text, icon, _desktopItemPosition, checkShift.Checked, DesktopItemType.Program);
+                    IntegratorHelper.AddItem(txtItemName.Text, txtItem.Text, icon, _desktopItemPosition, checkShift.Checked, DesktopItemType.Program);
 
                     break;
                 case DesktopItemType.Folder:
                     if (checkDefaultIcon.Checked)
                     {
-                        icon = Integrator.FolderDefaultIcon;
+                        icon = IntegratorHelper.FolderDefaultIcon;
                     }
                     else
                     {
                         icon = txtIcon.Text;
                     }
 
-                    Integrator.AddItem(txtItemName.Text, txtItem.Text, icon, _desktopItemPosition, checkShift.Checked, DesktopItemType.Folder);
+                    IntegratorHelper.AddItem(txtItemName.Text, txtItem.Text, icon, _desktopItemPosition, checkShift.Checked, DesktopItemType.Folder);
 
                     break;
                 case DesktopItemType.Link:
                     if (checkDefaultIcon.Checked)
                     {
-                        icon = Integrator.DownloadFavicon(txtItem.Text, txtItemName.Text);
+                        icon = IntegratorHelper.DownloadFavicon(txtItem.Text, txtItemName.Text);
                     }
                     else
                     {
                         icon = txtIcon.Text;
                     }
 
-                    Integrator.AddItem(txtItemName.Text, txtItem.Text, icon, _desktopItemPosition, checkShift.Checked, DesktopItemType.Link);
+                    IntegratorHelper.AddItem(txtItemName.Text, txtItem.Text, icon, _desktopItemPosition, checkShift.Checked, DesktopItemType.Link);
 
                     break;
                 case DesktopItemType.File:
@@ -2887,7 +3297,7 @@ namespace Optimizer
                         icon = txtIcon.Text;
                     }
 
-                    Integrator.AddItem(txtItemName.Text, txtItem.Text, icon, _desktopItemPosition, checkShift.Checked, DesktopItemType.File);
+                    IntegratorHelper.AddItem(txtItemName.Text, txtItem.Text, icon, _desktopItemPosition, checkShift.Checked, DesktopItemType.File);
 
                     break;
                 case DesktopItemType.Command:
@@ -2896,7 +3306,7 @@ namespace Optimizer
                         icon = txtIcon.Text;
                     }
 
-                    Integrator.AddItem(txtItemName.Text, txtItem.Text, icon, _desktopItemPosition, checkShift.Checked, DesktopItemType.Command);
+                    IntegratorHelper.AddItem(txtItemName.Text, txtItem.Text, icon, _desktopItemPosition, checkShift.Checked, DesktopItemType.Command);
 
                     break;
             }
@@ -2995,7 +3405,7 @@ namespace Optimizer
         {
             if (listCustomCommands.SelectedItems.Count == 1)
             {
-                Integrator.DeleteCustomCommand(listCustomCommands.SelectedItem.ToString());
+                IntegratorHelper.DeleteCustomCommand(listCustomCommands.SelectedItem.ToString());
                 GetCustomCommands();
             }
         }
@@ -3014,7 +3424,7 @@ namespace Optimizer
         {
             foreach (Control c in Utilities.GetSelfAndChildrenRecursive(panelUwp))
             {
-                if (c is MoonCheck) ((MoonCheck)c).Checked = chkSelectAllModernApps.Checked;
+                if (c is MoonCheck mc) mc.Checked = chkSelectAllModernApps.Checked;
             }
         }
 
@@ -3030,13 +3440,13 @@ namespace Optimizer
         {
             if (performanceSw.ToggleChecked)
             {
-                Optimize.EnablePerformanceTweaks();
+                OptimizeHelper.EnablePerformanceTweaks();
             }
             else
             {
-                Optimize.DisablePerformanceTweaks();
+                OptimizeHelper.DisablePerformanceTweaks();
             }
-            Options.CurrentOptions.EnablePerformanceTweaks = performanceSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.EnablePerformanceTweaks = performanceSw.ToggleChecked;
             ShowRestartNeeded();
         }
 
@@ -3044,33 +3454,33 @@ namespace Optimizer
         {
             if (networkSw.ToggleChecked)
             {
-                Optimize.DisableNetworkThrottling();
+                OptimizeHelper.DisableNetworkThrottling();
             }
             else
             {
-                Optimize.EnableNetworkThrottling();
+                OptimizeHelper.EnableNetworkThrottling();
             }
-            Options.CurrentOptions.DisableNetworkThrottling = networkSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableNetworkThrottling = networkSw.ToggleChecked;
         }
 
         private void toggleSwitch3_Click(object sender, EventArgs e)
         {
             if (defenderSw.ToggleChecked)
             {
-                Optimize.DisableDefender();
+                OptimizeHelper.DisableDefender();
             }
             else
             {
-                Optimize.EnableDefender();
+                OptimizeHelper.EnableDefender();
             }
-            Options.CurrentOptions.DisableWindowsDefender = defenderSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableWindowsDefender = defenderSw.ToggleChecked;
         }
 
         private void toggleSwitch4_Click(object sender, EventArgs e)
         {
             if (systemRestoreSw.ToggleChecked)
             {
-                if (MessageBox.Show(Options.TranslationList["systemRestoreM"].ToString(), "Optimizer", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.No)
+                if (MessageBox.Show(OptionsHelper.TranslationList["systemRestoreM"].ToString(), "Optimizer", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.No)
                 {
                     _skipSystemRestore = true;
                     systemRestoreSw.ToggleChecked = false;
@@ -3078,132 +3488,132 @@ namespace Optimizer
                 }
 
                 _skipSystemRestore = false;
-                Optimize.DisableSystemRestore();
+                OptimizeHelper.DisableSystemRestore();
             }
             else
             {
                 if (_skipSystemRestore) return;
 
-                Optimize.EnableSystemRestore();
+                OptimizeHelper.EnableSystemRestore();
             }
-            if (!_skipSystemRestore) Options.CurrentOptions.DisableSystemRestore = systemRestoreSw.ToggleChecked;
+            if (!_skipSystemRestore) OptionsHelper.CurrentOptions.DisableSystemRestore = systemRestoreSw.ToggleChecked;
         }
 
         private void toggleSwitch5_Click(object sender, EventArgs e)
         {
             if (printSw.ToggleChecked)
             {
-                Optimize.DisablePrintService();
+                OptimizeHelper.DisablePrintService();
             }
             else
             {
-                Optimize.EnablePrintService();
+                OptimizeHelper.EnablePrintService();
             }
-            Options.CurrentOptions.DisablePrintService = printSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisablePrintService = printSw.ToggleChecked;
         }
 
         private void toggleSwitch6_Click(object sender, EventArgs e)
         {
             if (mediaSharingSw.ToggleChecked)
             {
-                Optimize.DisableMediaPlayerSharing();
+                OptimizeHelper.DisableMediaPlayerSharing();
             }
             else
             {
-                Optimize.EnableMediaPlayerSharing();
+                OptimizeHelper.EnableMediaPlayerSharing();
             }
-            Options.CurrentOptions.DisableMediaPlayerSharing = mediaSharingSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableMediaPlayerSharing = mediaSharingSw.ToggleChecked;
         }
 
         private void toggleSwitch8_Click(object sender, EventArgs e)
         {
             if (reportingSw.ToggleChecked)
             {
-                Optimize.DisableErrorReporting();
+                OptimizeHelper.DisableErrorReporting();
             }
             else
             {
-                Optimize.EnableErrorReporting();
+                OptimizeHelper.EnableErrorReporting();
             }
-            Options.CurrentOptions.DisableErrorReporting = reportingSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableErrorReporting = reportingSw.ToggleChecked;
         }
 
         private void toggleSwitch9_Click(object sender, EventArgs e)
         {
             if (homegroupSw.ToggleChecked)
             {
-                Optimize.DisableHomeGroup();
+                OptimizeHelper.DisableHomeGroup();
             }
             else
             {
-                Optimize.EnableHomeGroup();
+                OptimizeHelper.EnableHomeGroup();
             }
-            Options.CurrentOptions.DisableHomeGroup = homegroupSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableHomeGroup = homegroupSw.ToggleChecked;
         }
 
         private void toggleSwitch10_Click(object sender, EventArgs e)
         {
             if (superfetchSw.ToggleChecked)
             {
-                Optimize.DisableSuperfetch();
+                OptimizeHelper.DisableSuperfetch();
             }
             else
             {
-                Optimize.EnableSuperfetch();
+                OptimizeHelper.EnableSuperfetch();
             }
-            Options.CurrentOptions.DisableSuperfetch = superfetchSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableSuperfetch = superfetchSw.ToggleChecked;
         }
 
         private void toggleSwitch11_Click(object sender, EventArgs e)
         {
             if (telemetryTasksSw.ToggleChecked)
             {
-                Optimize.DisableTelemetryTasks();
+                OptimizeHelper.DisableTelemetryTasks();
             }
             else
             {
-                Optimize.EnableTelemetryTasks();
+                OptimizeHelper.EnableTelemetryTasks();
             }
-            Options.CurrentOptions.DisableTelemetryTasks = telemetryTasksSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableTelemetryTasks = telemetryTasksSw.ToggleChecked;
         }
 
         private void toggleSwitch12_Click(object sender, EventArgs e)
         {
             if (officeTelemetrySw.ToggleChecked)
             {
-                Optimize.DisableOffice2016Telemetry();
+                OptimizeHelper.DisableOffice2016Telemetry();
             }
             else
             {
-                Optimize.EnableOffice2016Telemetry();
+                OptimizeHelper.EnableOffice2016Telemetry();
             }
-            Options.CurrentOptions.DisableOffice2016Telemetry = officeTelemetrySw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableOffice2016Telemetry = officeTelemetrySw.ToggleChecked;
         }
 
         private void toggleSwitch13_Click(object sender, EventArgs e)
         {
             if (oldMixerSw.ToggleChecked)
             {
-                Optimize.EnableLegacyVolumeSlider();
+                OptimizeHelper.EnableLegacyVolumeSlider();
             }
             else
             {
-                Optimize.DisableLegacyVolumeSlider();
+                OptimizeHelper.DisableLegacyVolumeSlider();
             }
-            Options.CurrentOptions.EnableLegacyVolumeSlider = oldMixerSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.EnableLegacyVolumeSlider = oldMixerSw.ToggleChecked;
         }
 
         private void toggleSwitch18_Click(object sender, EventArgs e)
         {
             if (oldExplorerSw.ToggleChecked)
             {
-                Optimize.DisableQuickAccessHistory();
+                OptimizeHelper.DisableQuickAccessHistory();
             }
             else
             {
-                Optimize.EnableQuickAccessHistory();
+                OptimizeHelper.EnableQuickAccessHistory();
             }
-            Options.CurrentOptions.DisableQuickAccessHistory = oldExplorerSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableQuickAccessHistory = oldExplorerSw.ToggleChecked;
             ShowRestartNeeded();
         }
 
@@ -3211,20 +3621,20 @@ namespace Optimizer
         {
             if (adsSw.ToggleChecked)
             {
-                Optimize.DisableStartMenuAds();
+                OptimizeHelper.DisableStartMenuAds();
             }
             else
             {
-                Optimize.EnableStartMenuAds();
+                OptimizeHelper.EnableStartMenuAds();
             }
-            Options.CurrentOptions.DisableStartMenuAds = adsSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableStartMenuAds = adsSw.ToggleChecked;
         }
 
         private void toggleSwitch14_Click(object sender, EventArgs e)
         {
             if (uODSw.ToggleChecked)
             {
-                if (MessageBox.Show(Options.TranslationList["onedriveM"].ToString(), "Optimizer", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.No)
+                if (MessageBox.Show(OptionsHelper.TranslationList["onedriveM"].ToString(), "Optimizer", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.No)
                 {
                     _skipOneDrive = true;
                     uODSw.ToggleChecked = false;
@@ -3233,70 +3643,70 @@ namespace Optimizer
 
                 _skipOneDrive = false;
 
-                Task t = new Task(() => Optimize.UninstallOneDrive());
+                Task t = new Task(() => OptimizeHelper.UninstallOneDrive());
                 t.Start();
             }
             else
             {
                 if (_skipOneDrive) return;
 
-                Task t = new Task(() => Optimize.InstallOneDrive());
+                Task t = new Task(() => OptimizeHelper.InstallOneDrive());
                 t.Start();
             }
 
-            if (!_skipOneDrive) Options.CurrentOptions.UninstallOneDrive = uODSw.ToggleChecked;
+            if (!_skipOneDrive) OptionsHelper.CurrentOptions.UninstallOneDrive = uODSw.ToggleChecked;
         }
 
         private void toggleSwitch25_Click(object sender, EventArgs e)
         {
             if (peopleSw.ToggleChecked)
             {
-                Optimize.DisableMyPeople();
+                OptimizeHelper.DisableMyPeople();
             }
             else
             {
-                Optimize.EnableMyPeople();
+                OptimizeHelper.EnableMyPeople();
             }
-            Options.CurrentOptions.DisableMyPeople = peopleSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableMyPeople = peopleSw.ToggleChecked;
         }
 
         private void toggleSwitch24_Click(object sender, EventArgs e)
         {
             if (autoUpdatesSw.ToggleChecked)
             {
-                Optimize.DisableAutomaticUpdates();
+                OptimizeHelper.DisableAutomaticUpdates();
             }
             else
             {
-                Optimize.EnableAutomaticUpdates();
+                OptimizeHelper.EnableAutomaticUpdates();
             }
-            Options.CurrentOptions.DisableAutomaticUpdates = autoUpdatesSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableAutomaticUpdates = autoUpdatesSw.ToggleChecked;
         }
 
         private void toggleSwitch30_Click(object sender, EventArgs e)
         {
             if (driversSw.ToggleChecked)
             {
-                Optimize.ExcludeDrivers();
+                OptimizeHelper.ExcludeDrivers();
             }
             else
             {
-                Optimize.IncludeDrivers();
+                OptimizeHelper.IncludeDrivers();
             }
-            Options.CurrentOptions.ExcludeDrivers = driversSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.ExcludeDrivers = driversSw.ToggleChecked;
         }
 
         private void toggleSwitch23_Click(object sender, EventArgs e)
         {
             if (telemetryServicesSw.ToggleChecked)
             {
-                Optimize.DisableTelemetryServices();
+                OptimizeHelper.DisableTelemetryServices();
             }
             else
             {
-                Optimize.EnableTelemetryServices();
+                OptimizeHelper.EnableTelemetryServices();
             }
-            Options.CurrentOptions.DisableTelemetryServices = telemetryServicesSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableTelemetryServices = telemetryServicesSw.ToggleChecked;
             ShowRestartNeeded();
         }
 
@@ -3304,15 +3714,15 @@ namespace Optimizer
         {
             if (privacySw.ToggleChecked)
             {
-                Task t = new Task(() => Optimize.EnhancePrivacy());
+                Task t = new Task(() => OptimizeHelper.EnhancePrivacy());
                 t.Start();
             }
             else
             {
-                Task t = new Task(() => Optimize.CompromisePrivacy());
+                Task t = new Task(() => OptimizeHelper.CompromisePrivacy());
                 t.Start();
             }
-            Options.CurrentOptions.DisablePrivacyOptions = privacySw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisablePrivacyOptions = privacySw.ToggleChecked;
             ShowRestartNeeded();
         }
 
@@ -3320,26 +3730,26 @@ namespace Optimizer
         {
             if (cortanaSw.ToggleChecked)
             {
-                Optimize.DisableCortana();
+                OptimizeHelper.DisableCortana();
             }
             else
             {
-                Optimize.EnableCortana();
+                OptimizeHelper.EnableCortana();
             }
-            Options.CurrentOptions.DisableCortana = cortanaSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableCortana = cortanaSw.ToggleChecked;
         }
 
         private void toggleSwitch20_Click(object sender, EventArgs e)
         {
             if (sensorSw.ToggleChecked)
             {
-                Optimize.DisableSensorServices();
+                OptimizeHelper.DisableSensorServices();
             }
             else
             {
-                Optimize.EnableSensorServices();
+                OptimizeHelper.EnableSensorServices();
             }
-            Options.CurrentOptions.DisableSensorServices = sensorSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableSensorServices = sensorSw.ToggleChecked;
             ShowRestartNeeded();
         }
 
@@ -3347,39 +3757,39 @@ namespace Optimizer
         {
             if (inkSw.ToggleChecked)
             {
-                Optimize.DisableWindowsInk();
+                OptimizeHelper.DisableWindowsInk();
             }
             else
             {
-                Optimize.EnableWindowsInk();
+                OptimizeHelper.EnableWindowsInk();
             }
-            Options.CurrentOptions.DisableWindowsInk = inkSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableWindowsInk = inkSw.ToggleChecked;
         }
 
         private void toggleSwitch28_Click(object sender, EventArgs e)
         {
             if (spellSw.ToggleChecked)
             {
-                Optimize.DisableSpellingAndTypingFeatures();
+                OptimizeHelper.DisableSpellingAndTypingFeatures();
             }
             else
             {
-                Optimize.EnableSpellingAndTypingFeatures();
+                OptimizeHelper.EnableSpellingAndTypingFeatures();
             }
-            Options.CurrentOptions.DisableSpellingTyping = spellSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableSpellingTyping = spellSw.ToggleChecked;
         }
 
         private void toggleSwitch17_Click(object sender, EventArgs e)
         {
             if (xboxSw.ToggleChecked)
             {
-                Optimize.DisableXboxLive();
+                OptimizeHelper.DisableXboxLive();
             }
             else
             {
-                Optimize.EnableXboxLive();
+                OptimizeHelper.EnableXboxLive();
             }
-            Options.CurrentOptions.DisableXboxLive = xboxSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableXboxLive = xboxSw.ToggleChecked;
             ShowRestartNeeded();
         }
 
@@ -3387,13 +3797,13 @@ namespace Optimizer
         {
             if (gameBarSw.ToggleChecked)
             {
-                Optimize.DisableGameBar();
+                OptimizeHelper.DisableGameBar();
             }
             else
             {
-                Optimize.EnableGameBar();
+                OptimizeHelper.EnableGameBar();
             }
-            Options.CurrentOptions.DisableGameBar = gameBarSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableGameBar = gameBarSw.ToggleChecked;
             ShowRestartNeeded();
         }
 
@@ -3401,26 +3811,26 @@ namespace Optimizer
         {
             if (disableOneDriveSw.ToggleChecked)
             {
-                Optimize.DisableOneDrive();
+                OptimizeHelper.DisableOneDrive();
             }
             else
             {
-                Optimize.EnableOneDrive();
+                OptimizeHelper.EnableOneDrive();
             }
-            Options.CurrentOptions.DisableOneDrive = disableOneDriveSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableOneDrive = disableOneDriveSw.ToggleChecked;
         }
 
         private void toggleSwitch32_Click(object sender, EventArgs e)
         {
             if (compatSw.ToggleChecked)
             {
-                Optimize.DisableCompatibilityAssistant();
+                OptimizeHelper.DisableCompatibilityAssistant();
             }
             else
             {
-                Optimize.EnableCompatibilityAssistant();
+                OptimizeHelper.EnableCompatibilityAssistant();
             }
-            Options.CurrentOptions.DisableCompatibilityAssistant = compatSw.ToggleChecked;
+            OptionsHelper.CurrentOptions.DisableCompatibilityAssistant = compatSw.ToggleChecked;
         }
 
         private void btnUpdate_Click(object sender, EventArgs e)
@@ -3435,9 +3845,7 @@ namespace Optimizer
             addHostB.Enabled = !chkReadOnly.Checked;
             removeAllHostsB.Enabled = !chkReadOnly.Checked;
             removeHostB.Enabled = !chkReadOnly.Checked;
-            refreshHostsB.Enabled = !chkReadOnly.Checked;
             linkRestoreDefault.Enabled = !chkReadOnly.Checked;
-            chkBlock.Enabled = !chkReadOnly.Checked;
             txtDomain.Enabled = !chkReadOnly.Checked;
             txtIP.Enabled = !chkReadOnly.Checked;
 
@@ -3461,7 +3869,7 @@ namespace Optimizer
 
             linkWarnings.Visible = !string.IsNullOrEmpty(downloadLog);
 
-            txtDownloadStatus.Text = Options.TranslationList["downloadsFinished"];
+            txtDownloadStatus.Text = OptionsHelper.TranslationList["downloadsFinished"];
         }
 
         string appNameTemp = string.Empty;
@@ -3472,9 +3880,9 @@ namespace Optimizer
 
         private async void btnDownloadApps_Click(object sender, EventArgs e)
         {
-            if (!Directory.Exists(txtDownloadFolder.Text))
+            if (string.IsNullOrWhiteSpace(txtDownloadFolder.Text) || !Directory.Exists(txtDownloadFolder.Text))
             {
-                MessageBox.Show(Options.TranslationList["downloadDirInvalid"].ToString(), "Optimizer", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(OptionsHelper.TranslationList["downloadDirInvalid"].ToString(), "Optimizer", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
@@ -3493,11 +3901,11 @@ namespace Optimizer
             MoonCheck currentCheck;
             Control[] temp;
 
-            foreach (FeedApp x in AppsFromFeed)
+            foreach (AppInfo x in AppsFromFeed)
             {
                 if (string.IsNullOrEmpty(x.Tag)) continue;
                 temp = appsTab.Controls.Find(x.Tag, true);
-                if (temp.Count() == 0) continue;
+                if (!temp.Any()) continue;
                 currentCheck = (MoonCheck)temp[0];
                 if (currentCheck == null) continue;
                 if (!currentCheck.Checked) continue;
@@ -3509,7 +3917,7 @@ namespace Optimizer
                     count++;
                     if (string.IsNullOrEmpty(x.Link64))
                     {
-                        downloadLog += "• " + x.Title + ":" + Environment.NewLine + Options.TranslationList["no64Download"] + Environment.NewLine + Environment.NewLine;
+                        downloadLog += "• " + x.Title + ":" + Environment.NewLine + OptionsHelper.TranslationList["no64Download"] + Environment.NewLine + Environment.NewLine;
                         await DownloadApp(x, false);
                     }
                     else
@@ -3526,7 +3934,7 @@ namespace Optimizer
                     }
                     else
                     {
-                        downloadLog += "• " + x.Title + ":" + Environment.NewLine + Options.TranslationList["no32Download"] + Environment.NewLine + Environment.NewLine;
+                        downloadLog += "• " + x.Title + ":" + Environment.NewLine + OptionsHelper.TranslationList["no32Download"] + Environment.NewLine + Environment.NewLine;
                     }
                 }
             }
@@ -3547,7 +3955,7 @@ namespace Optimizer
                         if (a.ToLowerInvariant().Contains("sumatra")) p.StartInfo.Arguments = " -install";
                         // *** //
 
-                        txtDownloadStatus.Text = string.Format("{0}/{1} - {2} {3} ...", count, maxCount, Options.TranslationList["installing"], Path.GetFileNameWithoutExtension(a));
+                        txtDownloadStatus.Text = string.Format("{0}/{1} - {2} {3} ...", count, maxCount, OptionsHelper.TranslationList["installing"], Path.GetFileNameWithoutExtension(a));
 
                         await p.RunAsync();
                     };
@@ -3565,7 +3973,7 @@ namespace Optimizer
         }
 
         string fileExtension = ".exe";
-        private async Task DownloadApp(FeedApp app, bool pref64)
+        private async Task DownloadApp(AppInfo app, bool pref64)
         {
             try
             {
@@ -3607,8 +4015,8 @@ namespace Optimizer
             }
             catch (Exception ex)
             {
-                ErrorLogger.LogError("MainForm.DownloadApp", ex.Message, ex.StackTrace);
-                downloadLog += "• " + app.Title + ":" + Environment.NewLine + Options.TranslationList["linkInvalid"] + Environment.NewLine + Environment.NewLine;
+                Logger.LogError("MainForm.DownloadApp", ex.Message, ex.StackTrace);
+                downloadLog += "• " + app.Title + ":" + Environment.NewLine + OptionsHelper.TranslationList["linkInvalid"] + Environment.NewLine + Environment.NewLine;
 
                 if (pref64) try { File.Delete(Path.Combine(txtDownloadFolder.Text, app.Title + "-x64.exe")); } catch { }
                 if (!pref64) try { File.Delete(Path.Combine(txtDownloadFolder.Text, app.Title + "-x86.exe")); } catch { }
@@ -3658,8 +4066,8 @@ namespace Optimizer
             if (d.ShowDialog() == DialogResult.OK)
             {
                 txtDownloadFolder.Text = d.SelectedPath;
-                Options.CurrentOptions.AppsFolder = d.SelectedPath;
-                Options.SaveSettings();
+                OptionsHelper.CurrentOptions.AppsFolder = d.SelectedPath;
+                OptionsHelper.SaveSettings();
             }
         }
 
@@ -3672,12 +4080,6 @@ namespace Optimizer
         {
             InfoForm lf = new InfoForm(downloadLog);
             lf.ShowDialog(this);
-        }
-
-        private void txtDownloadFolder_TextChanged(object sender, EventArgs e)
-        {
-            Options.CurrentOptions.AppsFolder = txtDownloadFolder.Text;
-            Options.SaveSettings();
         }
 
         private void chkOnlyRemovable_CheckedChanged(object sender, EventArgs e)
@@ -3698,20 +4100,20 @@ namespace Optimizer
 
         private void btnViewLog_Click(object sender, EventArgs e)
         {
-            if (File.Exists(ErrorLogger.ErrorLogFile))
+            if (File.Exists(Logger.ErrorLogFile))
             {
-                InfoForm iform = new InfoForm(File.ReadAllText(ErrorLogger.ErrorLogFile, Encoding.UTF8));
+                InfoForm iform = new InfoForm(File.ReadAllText(Logger.ErrorLogFile, Encoding.UTF8));
                 iform.ShowDialog();
             }
             else
             {
-                MessageBox.Show(Options.TranslationList["noErrorsM"].ToString(), "Optimizer", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(OptionsHelper.TranslationList["noErrorsM"].ToString(), "Optimizer", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 
         private void btnOpenConf_Click(object sender, EventArgs e)
         {
-            Process.Start(Required.CoreFolder);
+            Process.Start(CoreHelper.CoreFolder);
         }
 
         private void btnPing_Click(object sender, EventArgs e)
@@ -3724,7 +4126,7 @@ namespace Optimizer
 
             if (PingerHelper.PingHost(txtPingInput.Text) == null)
             {
-                listPingResults.Items.Add(string.Format("{0} [{1}]", Options.TranslationList["hostNotFound"], txtPingInput.Text));
+                listPingResults.Items.Add(string.Format("{0} [{1}]", OptionsHelper.TranslationList["hostNotFound"], txtPingInput.Text));
                 return;
             }
 
@@ -3733,7 +4135,7 @@ namespace Optimizer
                 btnShodan.Enabled = false;
                 btnPing.Enabled = false;
 
-                listPingResults.Items.Add(string.Format("{0}", Options.TranslationList["pinging"]));
+                listPingResults.Items.Add(string.Format("{0}", OptionsHelper.TranslationList["pinging"]));
                 listPingResults.Items.Add("");
 
                 for (int i = 0; i < 9; i++)
@@ -3751,7 +4153,7 @@ namespace Optimizer
                     {
                         _pingResults.Add(tmpReply);
                         _shodanIP = _pingResults[i].Address.ToString();
-                        listPingResults.Items.Add(string.Format("{0} - {1}: {2} ms - TTL: {3}", _pingResults[i].Status, Options.TranslationList["latency"], _pingResults[i].RoundtripTime, _pingResults[i].Options.Ttl));
+                        listPingResults.Items.Add(string.Format("{0} - {1}: {2} ms - TTL: {3}", _pingResults[i].Status, OptionsHelper.TranslationList["latency"], _pingResults[i].RoundtripTime, _pingResults[i].Options.Ttl));
                     }
                 }
 
@@ -3764,11 +4166,11 @@ namespace Optimizer
                     long minLatency = _pingResults.Min(x => x.RoundtripTime);
                     double averageLatency = _pingResults.Average(x => x.RoundtripTime);
 
-                    listPingResults.Items.Add(string.Format("{0} = {1}, {2} = {3}, {4} = {5:F2}", Options.TranslationList["min"], minLatency, Options.TranslationList["max"], maxLatency, Options.TranslationList["avg"], averageLatency));
+                    listPingResults.Items.Add(string.Format("{0} = {1}, {2} = {3}, {4} = {5:F2}", OptionsHelper.TranslationList["min"], minLatency, OptionsHelper.TranslationList["max"], maxLatency, OptionsHelper.TranslationList["avg"], averageLatency));
                 }
                 else
                 {
-                    listPingResults.Items.Add(Options.TranslationList["timeout"]);
+                    listPingResults.Items.Add(OptionsHelper.TranslationList["timeout"]);
                 }
 
                 btnPing.Enabled = true;
@@ -3827,7 +4229,7 @@ namespace Optimizer
                 }
                 catch (Exception ex)
                 {
-                    ErrorLogger.LogError("btnExport.Click", ex.Message, ex.StackTrace);
+                    Logger.LogError("btnExport.Click", ex.Message, ex.StackTrace);
                     MessageBox.Show(ex.Message, "Optimizer", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
@@ -3869,8 +4271,8 @@ namespace Optimizer
         {
             _trayMenu = false;
 
-            Options.CurrentOptions.AppsFolder = txtDownloadFolder.Text;
-            Options.SaveSettings();
+            OptionsHelper.CurrentOptions.AppsFolder = txtDownloadFolder.Text;
+            OptionsHelper.SaveSettings();
 
             Application.Exit();
         }
@@ -3972,16 +4374,16 @@ namespace Optimizer
 
                 foreach (var x in _startUpItems)
                 {
-                    _backupItems.Add(new StartupBackupItem(x.Name, x.FileLocation, x.RegistryLocation.ToString(), x.StartupType.ToString()));
+                    _backupItems.Add(new BackupStartupItem(x.Name, x.FileLocation, x.RegistryLocation.ToString(), x.StartupType.ToString()));
                 }
 
                 try
                 {
-                    File.WriteAllText(Required.StartupItemsBackupFolder + Utilities.SanitizeFileFolderName(txtBackupTitle.Text + " - [" + DateTime.Now.ToShortDateString() + "-" + DateTime.Now.ToShortTimeString()) + "].json", JsonConvert.SerializeObject(_backupItems, Formatting.Indented));
+                    File.WriteAllText(CoreHelper.StartupItemsBackupFolder + Utilities.SanitizeFileFolderName(txtBackupTitle.Text + " - [" + DateTime.Now.ToShortDateString() + "-" + DateTime.Now.ToShortTimeString()) + "].json", JsonConvert.SerializeObject(_backupItems, Formatting.Indented));
                 }
                 catch (Exception ex)
                 {
-                    ErrorLogger.LogError("MainForm.BackupStartupItems", ex.Message, ex.StackTrace);
+                    Logger.LogError("MainForm.BackupStartupItems", ex.Message, ex.StackTrace);
                 }
             }
         }
@@ -3995,7 +4397,7 @@ namespace Optimizer
         {
             if (e.Item.Checked)
             {
-                e.Item.ForeColor = Options.ForegroundColor;
+                e.Item.ForeColor = OptionsHelper.ForegroundColor;
             }
             else
             {
@@ -4017,8 +4419,8 @@ namespace Optimizer
 
         private void quickAccessToggle_ToggleClicked(object sender, EventArgs e)
         {
-            Options.CurrentOptions.EnableTray = quickAccessToggle.ToggleChecked;
-            Options.SaveSettings();
+            OptionsHelper.CurrentOptions.EnableTray = quickAccessToggle.ToggleChecked;
+            OptionsHelper.SaveSettings();
 
             _trayMenu = quickAccessToggle.ToggleChecked;
             launcherIcon.Visible = quickAccessToggle.ToggleChecked;
@@ -4161,7 +4563,7 @@ namespace Optimizer
             }
             catch (Exception ex)
             {
-                ErrorLogger.LogError("MainForm.ParseChangelog", ex.Message, ex.StackTrace);
+                Logger.LogError("MainForm.ParseChangelog", ex.Message, ex.StackTrace);
                 MessageBox.Show(ex.Message, "Optimizer", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return string.Empty;
             }
@@ -4192,115 +4594,155 @@ namespace Optimizer
 
         private void boxLang_SelectedIndexChanged(object sender, EventArgs e)
         {
-            // LANGUAGE SELECTION PROCESSING
-
-            if (boxLang.Text == "English")
+            if (boxLang.Text == Constants.ENGLISH)
             {
                 picFlag.Image = Properties.Resources.united_kingdom;
-                Options.CurrentOptions.LanguageCode = LanguageCode.EN;
+                OptionsHelper.CurrentOptions.LanguageCode = LanguageCode.EN;
             }
-            else if (boxLang.Text == "русский")
+            else if (boxLang.Text == Constants.RUSSIAN)
             {
                 picFlag.Image = Properties.Resources.russia;
-                Options.CurrentOptions.LanguageCode = LanguageCode.RU;
+                OptionsHelper.CurrentOptions.LanguageCode = LanguageCode.RU;
             }
-            else if (boxLang.Text == "Ελληνικά")
+            else if (boxLang.Text == Constants.HELLENIC)
             {
                 picFlag.Image = Properties.Resources.greece;
-                Options.CurrentOptions.LanguageCode = LanguageCode.EL;
+                OptionsHelper.CurrentOptions.LanguageCode = LanguageCode.EL;
             }
-            else if (boxLang.Text == "Deutsch")
+            else if (boxLang.Text == Constants.GERMAN)
             {
                 picFlag.Image = Properties.Resources.germany;
-                Options.CurrentOptions.LanguageCode = LanguageCode.DE;
+                OptionsHelper.CurrentOptions.LanguageCode = LanguageCode.DE;
             }
-            else if (boxLang.Text == "Italiano")
+            else if (boxLang.Text == Constants.ITALIAN)
             {
                 picFlag.Image = Properties.Resources.italy;
-                Options.CurrentOptions.LanguageCode = LanguageCode.IT;
+                OptionsHelper.CurrentOptions.LanguageCode = LanguageCode.IT;
             }
-            else if (boxLang.Text == "Čeština")
+            else if (boxLang.Text == Constants.CZECH)
             {
                 picFlag.Image = Properties.Resources.czech;
-                Options.CurrentOptions.LanguageCode = LanguageCode.CZ;
+                OptionsHelper.CurrentOptions.LanguageCode = LanguageCode.CZ;
             }
-            else if (boxLang.Text == "Türkçe")
+            else if (boxLang.Text == Constants.TURKISH)
             {
                 picFlag.Image = Properties.Resources.turkey;
-                Options.CurrentOptions.LanguageCode = LanguageCode.TR;
+                OptionsHelper.CurrentOptions.LanguageCode = LanguageCode.TR;
             }
-            else if (boxLang.Text == "Español")
+            else if (boxLang.Text == Constants.SPANISH)
             {
                 picFlag.Image = Properties.Resources.spain;
-                Options.CurrentOptions.LanguageCode = LanguageCode.ES;
+                OptionsHelper.CurrentOptions.LanguageCode = LanguageCode.ES;
             }
-            else if (boxLang.Text == "Português")
+            else if (boxLang.Text == Constants.PORTUGUESE)
             {
                 picFlag.Image = Properties.Resources.brazil;
-                Options.CurrentOptions.LanguageCode = LanguageCode.PT;
+                OptionsHelper.CurrentOptions.LanguageCode = LanguageCode.PT;
             }
-            else if (boxLang.Text == "Français")
+            else if (boxLang.Text == Constants.FRENCH)
             {
                 picFlag.Image = Properties.Resources.france;
-                Options.CurrentOptions.LanguageCode = LanguageCode.FR;
+                OptionsHelper.CurrentOptions.LanguageCode = LanguageCode.FR;
             }
-            else if (boxLang.Text == "简体中文")
+            else if (boxLang.Text == Constants.CHINESE)
             {
                 picFlag.Image = Properties.Resources.china;
-                Options.CurrentOptions.LanguageCode = LanguageCode.CN;
+                OptionsHelper.CurrentOptions.LanguageCode = LanguageCode.CN;
             }
-            else if (boxLang.Text == "繁體中文")
+            else if (boxLang.Text == Constants.TAIWANESE)
             {
-                picFlag.Image = Properties.Resources.taiwan;
-                Options.CurrentOptions.LanguageCode = LanguageCode.TW;
+                picFlag.Image = Properties.Resources.china;
+                OptionsHelper.CurrentOptions.LanguageCode = LanguageCode.TW;
             }
-            else if (boxLang.Text == "한국어")
+            else if (boxLang.Text == Constants.KOREAN)
             {
                 picFlag.Image = Properties.Resources.korea;
-                Options.CurrentOptions.LanguageCode = LanguageCode.KO;
+                OptionsHelper.CurrentOptions.LanguageCode = LanguageCode.KO;
             }
-            else if (boxLang.Text == "Polski")
+            else if (boxLang.Text == Constants.POLISH)
             {
                 picFlag.Image = Properties.Resources.poland;
-                Options.CurrentOptions.LanguageCode = LanguageCode.PL;
+                OptionsHelper.CurrentOptions.LanguageCode = LanguageCode.PL;
             }
-            else if (boxLang.Text == "العربية")
+            else if (boxLang.Text == Constants.ARABIC)
             {
                 picFlag.Image = Properties.Resources.egypt;
-                Options.CurrentOptions.LanguageCode = LanguageCode.AR;
+                OptionsHelper.CurrentOptions.LanguageCode = LanguageCode.AR;
             }
-            else if (boxLang.Text == "کوردی")
+            else if (boxLang.Text == Constants.KURDISH)
             {
                 picFlag.Image = Properties.Resources.kurdish;
-                Options.CurrentOptions.LanguageCode = LanguageCode.KU;
+                OptionsHelper.CurrentOptions.LanguageCode = LanguageCode.KU;
             }
-            else if (boxLang.Text == "Magyar")
+            else if (boxLang.Text == Constants.HUNGARIAN)
             {
                 picFlag.Image = Properties.Resources.hungary;
-                Options.CurrentOptions.LanguageCode = LanguageCode.HU;
+                OptionsHelper.CurrentOptions.LanguageCode = LanguageCode.HU;
             }
-            else if (boxLang.Text == "Română")
+            else if (boxLang.Text == Constants.ROMANIAN)
             {
                 picFlag.Image = Properties.Resources.romania;
-                Options.CurrentOptions.LanguageCode = LanguageCode.RO;
+                OptionsHelper.CurrentOptions.LanguageCode = LanguageCode.RO;
             }
-            else if (boxLang.Text == "Nederlands")
+            else if (boxLang.Text == Constants.DUTCH)
             {
                 picFlag.Image = Properties.Resources.dutch;
-                Options.CurrentOptions.LanguageCode = LanguageCode.NL;
+                OptionsHelper.CurrentOptions.LanguageCode = LanguageCode.NL;
             }
-            else if (boxLang.Text == "українська")
+            else if (boxLang.Text == Constants.UKRAINIAN)
             {
                 picFlag.Image = Properties.Resources.ukraine;
-                Options.CurrentOptions.LanguageCode = LanguageCode.UA;
+                OptionsHelper.CurrentOptions.LanguageCode = LanguageCode.UA;
+            }
+            else if (boxLang.Text == Constants.JAPANESE)
+            {
+                picFlag.Image = Properties.Resources.japan;
+                OptionsHelper.CurrentOptions.LanguageCode = LanguageCode.JA;
+            }
+            else if (boxLang.Text == Constants.PERSIAN)
+            {
+                picFlag.Image = Properties.Resources.iran;
+                OptionsHelper.CurrentOptions.LanguageCode = LanguageCode.FA;
+            }
+            else if (boxLang.Text == Constants.NEPALI)
+            {
+                picFlag.Image = Properties.Resources.nepal;
+                OptionsHelper.CurrentOptions.LanguageCode = LanguageCode.NE;
+            }
+            else if (boxLang.Text == Constants.BULGARIAN)
+            {
+                picFlag.Image = Properties.Resources.bulgaria;
+                OptionsHelper.CurrentOptions.LanguageCode = LanguageCode.BG;
+            }
+            else if (boxLang.Text == Constants.VIETNAMESE)
+            {
+                picFlag.Image = Properties.Resources.vietnam;
+                OptionsHelper.CurrentOptions.LanguageCode = LanguageCode.VN;
+            }
+            else if (boxLang.Text == Constants.URDU)
+            {
+                picFlag.Image = Properties.Resources.pakistan;
+                OptionsHelper.CurrentOptions.LanguageCode = LanguageCode.UR;
+            }
+            else if (boxLang.Text == Constants.INDONESIAN)
+            {
+                picFlag.Image = Properties.Resources.indonesia;
+                OptionsHelper.CurrentOptions.LanguageCode = LanguageCode.ID;
+            }
+            else if (boxLang.Text == Constants.CROATIAN)
+            {
+                picFlag.Image = Properties.Resources.indonesia;
+                OptionsHelper.CurrentOptions.LanguageCode = LanguageCode.HR;
             }
 
-            this.CenterToScreen();
-            Options.SaveSettings();
-            Options.LoadTranslation();
+            OptionsHelper.SaveSettings();
+            OptionsHelper.LoadTranslation();
             Translate();
 
-            optionsTab.Focus();
+            FixTabHeaderWidth(tabCollection);
+            FixTabHeaderWidth(synapse);
+
+            btnUpdate.Focus();
         }
 
         private void cleanDriveB_Click(object sender, EventArgs e)
@@ -4310,6 +4752,15 @@ namespace Optimizer
 
         private void checkSelectAll_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
+            if (listCleanPreview.Items.Count < 1)
+            {
+                foreach (CheckBox x in panel1.Controls.OfType<CheckBox>())
+                {
+                    x.Checked = !x.Checked;
+                }
+                return;
+            }
+
             _cleanSelectAll = !_cleanSelectAll;
             for (int i = 0; i < listCleanPreview.Items.Count; i++)
             {
@@ -4337,76 +4788,6 @@ namespace Optimizer
                 Clipboard.SetText(((LinkLabel)sender).Text);
             }
             catch { }
-        }
-
-        private void boxDNS_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            if (boxAdapter.Items.Count <= 0) return;
-            if (boxAdapter.SelectedIndex <= -1) return;
-
-            if (boxDNS.Text == "Automatic")
-            {
-                PingerHelper.ResetDefaultDNS(PingerHelper.NetworkAdapters[boxAdapter.SelectedIndex].Name);
-                PingerHelper.GetActiveNetworkAdapters();
-                DisplayCurrentDNS();
-                return;
-            }
-            else if (boxDNS.Text == "Cloudflare DNS")
-            {
-                PingerHelper.SetDNS(PingerHelper.NetworkAdapters[boxAdapter.SelectedIndex].Name, PingerHelper.CloudflareDNSv4, PingerHelper.CloudflareDNSv6);
-                PingerHelper.GetActiveNetworkAdapters();
-                DisplayCurrentDNS();
-                return;
-            }
-            else if (boxDNS.Text == "Open DNS")
-            {
-                PingerHelper.SetDNS(PingerHelper.NetworkAdapters[boxAdapter.SelectedIndex].Name, PingerHelper.OpenDNSv4, PingerHelper.OpenDNSv6);
-                PingerHelper.GetActiveNetworkAdapters();
-                DisplayCurrentDNS();
-                return;
-            }
-            else if (boxDNS.Text == "Quad9 DNS")
-            {
-                PingerHelper.SetDNS(PingerHelper.NetworkAdapters[boxAdapter.SelectedIndex].Name, PingerHelper.Quad9DNSv4, PingerHelper.Quad9DNSv6);
-                PingerHelper.GetActiveNetworkAdapters();
-                DisplayCurrentDNS();
-                return;
-            }
-            else if (boxDNS.Text == "Google DNS")
-            {
-                PingerHelper.SetDNS(PingerHelper.NetworkAdapters[boxAdapter.SelectedIndex].Name, PingerHelper.GoogleDNSv4, PingerHelper.GoogleDNSv6);
-                PingerHelper.GetActiveNetworkAdapters();
-                DisplayCurrentDNS();
-                return;
-            }
-            else if (boxDNS.Text == "Alternate DNS")
-            {
-                PingerHelper.SetDNS(PingerHelper.NetworkAdapters[boxAdapter.SelectedIndex].Name, PingerHelper.AlternateDNSv4, PingerHelper.AlternateDNSv6);
-                PingerHelper.GetActiveNetworkAdapters();
-                DisplayCurrentDNS();
-                return;
-            }
-            else if (boxDNS.Text == "Adguard DNS")
-            {
-                PingerHelper.SetDNS(PingerHelper.NetworkAdapters[boxAdapter.SelectedIndex].Name, PingerHelper.AdguardDNSv4, PingerHelper.AdguardDNSv6);
-                PingerHelper.GetActiveNetworkAdapters();
-                DisplayCurrentDNS();
-                return;
-            }
-            else if (boxDNS.Text == "CleanBrowsing")
-            {
-                PingerHelper.SetDNS(PingerHelper.NetworkAdapters[boxAdapter.SelectedIndex].Name, PingerHelper.CleanBrowsingDNSv4, PingerHelper.CleanBrowsingDNSv6);
-                PingerHelper.GetActiveNetworkAdapters();
-                DisplayCurrentDNS();
-                return;
-            }
-            else if (boxDNS.Text == "CleanBrowsing (adult filter)")
-            {
-                PingerHelper.SetDNS(PingerHelper.NetworkAdapters[boxAdapter.SelectedIndex].Name, PingerHelper.CleanBrowsingAdultDNSv4, PingerHelper.CleanBrowsingAdultDNSv6);
-                PingerHelper.GetActiveNetworkAdapters();
-                DisplayCurrentDNS();
-                return;
-            }
         }
 
         private void DisplayCurrentDNS()
@@ -4471,11 +4852,11 @@ namespace Optimizer
         {
             if (PMB.ToggleChecked)
             {
-                Utilities.ImportRegistryScript(Required.ReadyMadeMenusFolder + "\\PowerMenu.reg");
+                Utilities.ImportRegistryScript(CoreHelper.ReadyMadeMenusFolder + "\\PowerMenu.reg");
             }
             else
             {
-                Integrator.RemoveItem("Power Menu");
+                IntegratorHelper.RemoveItem("Power Menu");
             }
 
             GetDesktopItems();
@@ -4485,11 +4866,11 @@ namespace Optimizer
         {
             if (AddOwnerB.ToggleChecked)
             {
-                Integrator.InstallTakeOwnership(false);
+                IntegratorHelper.InstallTakeOwnership(false);
             }
             else
             {
-                Integrator.InstallTakeOwnership(true);
+                IntegratorHelper.InstallTakeOwnership(true);
             }
 
             GetDesktopItems();
@@ -4499,11 +4880,11 @@ namespace Optimizer
         {
             if (AddCMDB.ToggleChecked)
             {
-                Integrator.InstallOpenWithCMD();
+                IntegratorHelper.InstallOpenWithCMD();
             }
             else
             {
-                Integrator.DeleteOpenWithCMD();
+                IntegratorHelper.DeleteOpenWithCMD();
             }
 
             GetDesktopItems();
@@ -4513,11 +4894,11 @@ namespace Optimizer
         {
             if (DSB.ToggleChecked)
             {
-                Utilities.ImportRegistryScript(Required.ReadyMadeMenusFolder + "\\DesktopShortcuts.reg");
+                Utilities.ImportRegistryScript(CoreHelper.ReadyMadeMenusFolder + "\\DesktopShortcuts.reg");
             }
             else
             {
-                Integrator.RemoveItem("DesktopShortcuts");
+                IntegratorHelper.RemoveItem("DesktopShortcuts");
             }
 
             GetDesktopItems();
@@ -4527,11 +4908,11 @@ namespace Optimizer
         {
             if (STB.ToggleChecked)
             {
-                Utilities.ImportRegistryScript(Required.ReadyMadeMenusFolder + "\\SystemTools.reg");
+                Utilities.ImportRegistryScript(CoreHelper.ReadyMadeMenusFolder + "\\SystemTools.reg");
             }
             else
             {
-                Integrator.RemoveItem("SystemTools");
+                IntegratorHelper.RemoveItem("SystemTools");
             }
 
             GetDesktopItems();
@@ -4541,11 +4922,11 @@ namespace Optimizer
         {
             if (WAB.ToggleChecked)
             {
-                Utilities.ImportRegistryScript(Required.ReadyMadeMenusFolder + "\\WindowsApps.reg");
+                Utilities.ImportRegistryScript(CoreHelper.ReadyMadeMenusFolder + "\\WindowsApps.reg");
             }
             else
             {
-                Integrator.RemoveItem("WindowsApps");
+                IntegratorHelper.RemoveItem("WindowsApps");
             }
 
             GetDesktopItems();
@@ -4555,11 +4936,11 @@ namespace Optimizer
         {
             if (SSB.ToggleChecked)
             {
-                Utilities.ImportRegistryScript(Required.ReadyMadeMenusFolder + "\\SystemShortcuts.reg");
+                Utilities.ImportRegistryScript(CoreHelper.ReadyMadeMenusFolder + "\\SystemShortcuts.reg");
             }
             else
             {
-                Integrator.RemoveItem("SystemShortcuts");
+                IntegratorHelper.RemoveItem("SystemShortcuts");
             }
 
             GetDesktopItems();
@@ -4573,8 +4954,7 @@ namespace Optimizer
 
         private void picRestartNeeded_Click(object sender, EventArgs e)
         {
-            Options.SaveSettings();
-            Utilities.Reboot();
+            ConfirmAndReboot();
         }
 
         private void ShowRestartNeeded()
@@ -4605,25 +4985,24 @@ namespace Optimizer
 
         private void restartAndApply_Click(object sender, EventArgs e)
         {
-            Options.SaveSettings();
-            Utilities.Reboot();
+            ConfirmAndReboot();
         }
 
         private void colorPicker1_ColorChanged(object sender, EventArgs e)
         {
             pictureBox1.BackColor = colorPicker1.Color;
-            Options.CurrentOptions.Theme = colorPicker1.Color;
-            Options.ApplyTheme(this);
+            OptionsHelper.CurrentOptions.Theme = colorPicker1.Color;
+            OptionsHelper.ApplyTheme(this);
 
-            Options.SaveSettings();
+            OptionsHelper.SaveSettings();
         }
 
         private void autoStartToggle_ToggleClicked(object sender, EventArgs e)
         {
-            Options.CurrentOptions.AutoStart = autoStartToggle.ToggleChecked;
-            Options.SaveSettings();
+            OptionsHelper.CurrentOptions.AutoStart = autoStartToggle.ToggleChecked;
+            OptionsHelper.SaveSettings();
 
-            if (Options.CurrentOptions.AutoStart)
+            if (OptionsHelper.CurrentOptions.AutoStart)
             {
                 Utilities.RegisterAutoStart();
             }
@@ -4638,6 +5017,173 @@ namespace Optimizer
             SubForm sf = new SubForm();
             sf.SetTip(translationList["lblLab"].ToString());
             sf.ShowDialog(this);
+        }
+
+        private void btnRestoreUwp_Click(object sender, EventArgs e)
+        {
+            if (MessageBox.Show(_uwpRestoreMessage, "Optimizer", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            {
+                UWPHelper.RestoreAllUWPApps();
+            }
+        }
+
+        private void btnRestartSafe_Click(object sender, EventArgs e)
+        {
+            Program.RestartInSafeMode();
+        }
+
+        private void btnRestart_Click(object sender, EventArgs e)
+        {
+            Program.RestartInNormalMode();
+        }
+
+        private void btnRestartDisableDefender_Click(object sender, EventArgs e)
+        {
+            Microsoft.Win32.Registry.SetValue(@"HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\RunOnce", "*OptimizerDisableDefender", Assembly.GetExecutingAssembly().Location + " /silentdisabledefender", Microsoft.Win32.RegistryValueKind.String);
+            Program.RestartInSafeMode();
+        }
+
+        private void ConfirmAndReboot()
+        {
+            if (MessageBox.Show(_uwpRestoreMessage, "Optimizer", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            {
+                OptionsHelper.SaveSettings();
+                Utilities.Reboot();
+            }
+        }
+
+        private void linkLabel4_LinkClicked_1(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            Process.Start(_bugReportLink);
+        }
+
+        private void linkLabel6_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            Process.Start(_featureRequestLink);
+        }
+
+        private void btnRefreshFonts_Click(object sender, EventArgs e)
+        {
+            LoadAvailableFonts();
+        }
+
+        private void btnRestoreFont_Click(object sender, EventArgs e)
+        {
+            if (MessageBox.Show(_uwpRestoreMessage, "Optimizer", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            {
+                FontHelper.RestoreDefaultGlobalFont();
+                ShowRestartNeeded();
+            }
+        }
+
+        private void btnSetGlobalFont_Click(object sender, EventArgs e)
+        {
+            if (listFonts.SelectedIndex < 0)
+            {
+                return;
+            }
+            if (MessageBox.Show(_uwpRestoreMessage, "Optimizer", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            {
+                string fontName = listFonts.SelectedItem.ToString();
+                FontHelper.ChangeGlobalFont(fontName);
+                ShowRestartNeeded();
+            }
+        }
+
+        private void txtSearchFonts_TextChanged(object sender, EventArgs e)
+        {
+            if (!string.IsNullOrEmpty(txtSearchFonts.Text))
+            {
+                listFonts.Items.Clear();
+                listFonts.Items.AddRange(_availableFonts.Where(x => x.ToLowerInvariant().Contains(txtSearchFonts.Text.ToLowerInvariant().Trim())).ToArray());
+            }
+            else
+            {
+                LoadAvailableFonts();
+            }
+        }
+
+        private void chkCustomDns_CheckedChanged(object sender, EventArgs e)
+        {
+            label10.Visible = chkCustomDns.Checked;
+            label12.Visible = chkCustomDns.Checked;
+            txtDns4A.Visible = chkCustomDns.Checked;
+            txtDns4B.Visible = chkCustomDns.Checked;
+            txtDns6A.Visible = chkCustomDns.Checked;
+            txtDns6B.Visible = chkCustomDns.Checked;
+            boxDNS.Visible = !chkCustomDns.Checked;
+        }
+
+        private void btnSetDns_Click(object sender, EventArgs e)
+        {
+            if (chkCustomDns.Checked)
+            {
+                ApplyCustomDNS();
+            }
+            else
+            {
+                ApplySelectedDNS();
+            }
+        }
+
+        private void btnReinforce_Click(object sender, EventArgs e)
+        {
+            if (MessageBox.Show(_reinforcePoliciesMessage, "Optimizer", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            {
+                Utilities.ReinforceCurrentTweaks();
+
+                if (Program.MUTEX != null)
+                {
+                    Program.MUTEX.ReleaseMutex();
+                    Program.MUTEX.Dispose();
+                    Program.MUTEX = null;
+                }
+                Application.Restart();
+            }
+        }
+
+        private void autoUpdateToggle_ToggleClicked(object sender, EventArgs e)
+        {
+            OptionsHelper.CurrentOptions.UpdateOnLaunch = autoUpdateToggle.ToggleChecked;
+            OptionsHelper.SaveSettings();
+        }
+
+        private void linkLabel7_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            Process.Start(_faqSectionLink);
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            LoadSystemVariables();
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            if (!string.IsNullOrWhiteSpace(txtSysVar.Text))
+            {
+                listSystemVariables.Items.Add(txtSysVar.Text);
+                _systemVariables.Add(txtSysVar.Text);
+                IntegratorHelper.UpdatePathSystemVariables(_systemVariables.ToArray());
+                txtSysVar.Clear();
+                LoadSystemVariables();
+                IntegratorHelper.ApplyPathSystemVariables();
+            }
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            if (listSystemVariables.SelectedItems.Count == 1)
+            {
+                var indexToDelete =_systemVariables.FindIndex(x => x.Equals(listSystemVariables.SelectedItem.ToString(), StringComparison.OrdinalIgnoreCase));
+                if (indexToDelete != -1)
+                {
+                    _systemVariables.RemoveAt(indexToDelete);
+                }
+                IntegratorHelper.UpdatePathSystemVariables(_systemVariables.ToArray());
+                LoadSystemVariables();
+                IntegratorHelper.ApplyPathSystemVariables();
+            }
         }
     }
 }

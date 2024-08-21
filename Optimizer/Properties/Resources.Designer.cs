@@ -89,21 +89,22 @@ namespace Optimizer.Properties {
         
         /// <summary>
         ///   Looks up a localized string similar to {
-        ///	&quot;subSystem&quot;: &quot;نظام&quot;,
-        ///	&quot;subPrivacy&quot;: &quot;خصوصية&quot;,
+        ///	&quot;subSystem&quot;: &quot;النظام&quot;,
+        ///	&quot;subPrivacy&quot;: &quot;الخصوصية&quot;,
         ///	&quot;subGaming&quot;: &quot;الألعاب&quot;,
-        ///	&quot;subTouch&quot;: &quot;يلمس&quot;,
-        ///	&quot;subTaskbar&quot;: &quot;ريط المهام&quot;,
-        ///	&quot;subExtras&quot;: &quot;إضافات&quot;,
+        ///	&quot;subTouch&quot;: &quot;اللمس&quot;,
+        ///	&quot;subTaskbar&quot;: &quot;شريط المهام&quot;,
+        ///	&quot;subExtras&quot;: &quot;الإضافات&quot;,
         ///	&quot;btnAbout&quot;: &quot;حسنا&quot;,
         ///	&quot;restartButton&quot;: &quot;إعادة التشغيل الآن&quot;,
         ///	&quot;restartButton8&quot;: &quot;إعادة التشغيل الآن&quot;,
         ///	&quot;restartButton10&quot;: &quot;إعادة التشغيل الآن&quot;,
-        ///	&quot;restartAndApply&quot;: &quot;إعادة التشغيل لتطبيق التغييرات&quot;,
-        ///	&quot;btnFind&quot;: &quot;يجد&quot;,
-        ///	&quot;btnKill&quot;: &quot;قتل&quot;,
-        ///	&quot;trayUnlocker&quot;: &quot;مقابض الملفات&quot;,
-        ///	&quot;onedriveM&quot;: &quot;هل أنت متأكد من أنك تريد إزالة تثبيت OneDrive؟ يؤدي هذا إلى حذف  [rest of string was truncated]&quot;;.
+        ///	&quot;btnFind&quot;: &quot;البحث&quot;,
+        ///	&quot;btnKill&quot;: &quot;إنهاء&quot;,
+        ///	&quot;trayUnlocker&quot;: &quot;مفاتيح الملفات&quot;,
+        ///	&quot;restartAndApply&quot;: &quot;لتطبيق الإعدادات يجب إعادة التشغيل&quot;,
+        ///	&quot;txtVersion&quot;: &quot;الإصدار: {VN}&quot;,
+        ///	&quot;txtBitness&quot;: &quot;أنت تعمل مع { [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string AR {
             get {
@@ -122,11 +123,46 @@ namespace Optimizer.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to {
+        ///	&quot;subSystem&quot;: &quot;Система&quot;,
+        ///	&quot;subPrivacy&quot;: &quot;Анонимност&quot;,
+        ///	&quot;subGaming&quot;: &quot;Гейминг&quot;,
+        ///	&quot;subTouch&quot;: &quot;Пипане&quot;,
+        ///	&quot;subTaskbar&quot;: &quot;Лента за задачи&quot;,
+        ///	&quot;subExtras&quot;: &quot;Екстри&quot;,
+        ///	&quot;btnAbout&quot;: &quot;ОК&quot;,
+        ///	&quot;restartButton&quot;: &quot;Рестартирай Сега&quot;,
+        ///	&quot;restartButton8&quot;: &quot;Рестартирай Сега&quot;,
+        ///	&quot;restartButton10&quot;: &quot;Рестартирай Сега&quot;,
+        ///	&quot;btnFind&quot;: &quot;Намери&quot;,
+        ///	&quot;btnKill&quot;: &quot;Убий&quot;,
+        ///	&quot;trayUnlocker&quot;: &quot;Файлови Управители&quot;,
+        ///	&quot;restartAndApply&quot;: &quot;Рестартирай, за да приложиш промените&quot;,
+        ///	&quot;txtVersion&quot;: &quot;Версия: {VN}&quot;,
+        ///	&quot;txtBitness&quot;: &quot;Работиш с [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string BG {
+            get {
+                return ResourceManager.GetString("BG", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
         internal static System.Drawing.Bitmap brazil {
             get {
                 object obj = ResourceManager.GetObject("brazil", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap bulgaria {
+            get {
+                object obj = ResourceManager.GetObject("bulgaria", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -145,7 +181,7 @@ namespace Optimizer.Properties {
         ///   Looks up a localized string similar to {
         ///	&quot;subSystem&quot;: &quot;系统&quot;,
         ///	&quot;subPrivacy&quot;: &quot;隐私&quot;,
-        ///	&quot;subGaming&quot;: &quot;赌博&quot;,
+        ///	&quot;subGaming&quot;: &quot;游戏&quot;,
         ///	&quot;subTouch&quot;: &quot;触碰&quot;,
         ///	&quot;subTaskbar&quot;: &quot;任务栏&quot;,
         ///	&quot;subExtras&quot;: &quot;附加功能&quot;,
@@ -165,6 +201,16 @@ namespace Optimizer.Properties {
         internal static string CN {
             get {
                 return ResourceManager.GetString("CN", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap croatia {
+            get {
+                object obj = ResourceManager.GetObject("croatia", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
             }
         }
         
@@ -206,21 +252,21 @@ namespace Optimizer.Properties {
         /// <summary>
         ///   Looks up a localized string similar to {
         ///	&quot;subSystem&quot;: &quot;System&quot;,
-        ///	&quot;subPrivacy&quot;: &quot;Privatsphäre&quot;,
-        ///	&quot;subGaming&quot;: &quot;Spielen&quot;,
-        ///	&quot;subTouch&quot;: &quot;Berühren&quot;,
+        ///	&quot;subPrivacy&quot;: &quot;Datenschutz&quot;,
+        ///	&quot;subGaming&quot;: &quot;Gaming&quot;,
+        ///	&quot;subTouch&quot;: &quot;Touch&quot;,
         ///	&quot;subTaskbar&quot;: &quot;Taskleiste&quot;,
-        ///	&quot;subExtras&quot;: &quot;Extras&quot;,
+        ///	&quot;subExtras&quot;: &quot;Zusatzfunktionen&quot;,
         ///	&quot;btnAbout&quot;: &quot;OK&quot;,
         ///	&quot;restartButton&quot;: &quot;Jetzt neu starten&quot;,
         ///	&quot;restartButton8&quot;: &quot;Jetzt neu starten&quot;,
         ///	&quot;restartButton10&quot;: &quot;Jetzt neu starten&quot;,
-        ///	&quot;restartAndApply&quot;: &quot;Neu starten, um Änderungen anzuwenden&quot;,
+        ///	&quot;btnFind&quot;: &quot;Suchen&quot;,
+        ///	&quot;btnKill&quot;: &quot;Beenden&quot;,
+        ///	&quot;trayUnlocker&quot;: &quot;Dateigriffe&quot;,
+        ///	&quot;restartAndApply&quot;: &quot;Neustart zur Anwendung der Änderungen&quot;,
         ///	&quot;txtVersion&quot;: &quot;Version: {VN}&quot;,
-        ///	&quot;btnFind&quot;: &quot;Finden&quot;,
-        ///	&quot;btnKill&quot;: &quot;Töten&quot;,
-        ///	&quot;trayUnlocker&quot;: &quot;Dateihandles&quot;,
-        ///	&quot;txtBitness&quot;: &quot;Betriebssyst [rest of string was truncated]&quot;;.
+        ///	&quot;txtBitness&quot;: &quot;Sie ar [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string DE {
             get {
@@ -247,6 +293,33 @@ namespace Optimizer.Properties {
         internal static string DesktopShortcuts {
             get {
                 return ResourceManager.GetString("DesktopShortcuts", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Windows Registry Editor Version 5.00
+        ///
+        ///; MajorGeeks.Com
+        ///; How to Restore the Windows Photo Viewer on Windows 10
+        ///; https://www.majorgeeks.com/content/page/restore_the_windows_photo_viewer_on_windows_10.html
+        ///
+        ///[HKEY_CLASSES_ROOT\jpegfile\shell\open\DropTarget]
+        ///&quot;Clsid&quot;=-
+        ///
+        ///[HKEY_CLASSES_ROOT\pngfile\shell\open\DropTarget]
+        ///&quot;Clsid&quot;=-
+        ///
+        ///[-HKEY_CLASSES_ROOT\Applications\photoviewer.dll\shell\open]
+        ///
+        ///[-HKEY_CLASSES_ROOT\PhotoViewer.FileAssoc.Bitmap]
+        ///
+        ///[-HKEY_CLASSES_ROOT\PhotoViewer.FileAssoc.JFIF]
+        ///
+        ///[-H [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string DisableClassicPhotoViewer {
+            get {
+                return ResourceManager.GetString("DisableClassicPhotoViewer", resourceCulture);
             }
         }
         
@@ -279,9 +352,9 @@ namespace Optimizer.Properties {
         ///&quot;visiosolution&quot;=dword:00000001
         ///&quot;wdsolution&quot;=dword:00000001
         ///&quot;xlsolution&quot;=dword:00000001
-        /// 
+        ///
         ///[HKEY_CURRENT_USER\Software\Policies\microsoft\office\16.0\osm\preventedsolutiontypes]
-        ///&quot;agave&quot;=dword:0000000 [rest of string was truncated]&quot;;.
+        ///&quot;agave&quot;= [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string DisableOfficeTelemetry {
             get {
@@ -433,7 +506,7 @@ namespace Optimizer.Properties {
         ///&quot;visiosolution&quot;=-
         ///&quot;wdsolution&quot;=-
         ///&quot;xlsolution&quot;=-
-        /// 
+        ///
         ///[HKEY_CURRENT_USER\Software\Policies\microsoft\office\16.0\osm\preventedsolutiontypes]
         ///&quot;agave&quot;=-
         ///&quot;appaddins&quot;=-
@@ -515,6 +588,32 @@ namespace Optimizer.Properties {
         
         /// <summary>
         ///   Looks up a localized string similar to {
+        ///	&quot;subSystem&quot;: &quot;سیستم&quot;,
+        ///	&quot;subPrivacy&quot;: &quot;حریم خصوصی&quot;,
+        ///	&quot;subGaming&quot;: &quot;بازی&quot;,
+        ///	&quot;subTouch&quot;: &quot;لمس کردن&quot;,
+        ///	&quot;subTaskbar&quot;: &quot;نوار وظیفه&quot;,
+        ///	&quot;subExtras&quot;: &quot;موارد اضافی&quot;,
+        ///	&quot;btnAbout&quot;: &quot;تایید&quot;,
+        ///	&quot;restartButton&quot;: &quot;راه اندازی مجدد&quot;,
+        ///	&quot;restartButton8&quot;: &quot;راه اندازی مجدد&quot;,
+        ///	&quot;restartButton10&quot;: &quot;راه اندازی مجدد&quot;,
+        ///	&quot;btnFind&quot;: &quot;پیدا کردن&quot;,
+        ///	&quot;btnKill&quot;: &quot;کشتن&quot;,
+        ///	&quot;trayUnlocker&quot;: &quot;دسته های فایل&quot;,
+        ///	&quot;restartAndApply&quot;: &quot;ریست برای اعمال تغییرات&quot;,
+        ///	&quot;txtVersion&quot;: &quot;نسخه: {VN}&quot;,
+        ///	&quot;txtBitness&quot;: &quot;شما کار میکنید با {BITS}&quot;,
+        ///	&quot; [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string FA {
+            get {
+                return ResourceManager.GetString("FA", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {
         ///	&quot;subSystem&quot;: &quot;Système&quot;,
         ///	&quot;subPrivacy&quot;: &quot;Intimité&quot;,
         ///	&quot;subGaming&quot;: &quot;Jeux&quot;,
@@ -558,11 +657,11 @@ namespace Optimizer.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to @echo off 
-        ///pushd &quot;%~dp0&quot; 
-        ///dir /b %SystemRoot%\servicing\Packages\Microsoft-Windows-GroupPolicy-ClientExtensions-Package~3*.mum &gt;List.txt 
-        ///dir /b %SystemRoot%\servicing\Packages\Microsoft-Windows-GroupPolicy-ClientTools-Package~3*.mum &gt;&gt;List.txt 
-        ///for /f %%i in (&apos;findstr /i . List.txt 2^&gt;nul&apos;) do dism /online /norestart /add-package:&quot;%SystemRoot%\servicing\Packages\%%i&quot; 
+        ///   Looks up a localized string similar to @echo off
+        ///pushd &quot;%~dp0&quot;
+        ///dir /b %SystemRoot%\servicing\Packages\Microsoft-Windows-GroupPolicy-ClientExtensions-Package~3*.mum &gt;List.txt
+        ///dir /b %SystemRoot%\servicing\Packages\Microsoft-Windows-GroupPolicy-ClientTools-Package~3*.mum &gt;&gt;List.txt
+        ///for /f %%i in (&apos;findstr /i . List.txt 2^&gt;nul&apos;) do dism /online /norestart /add-package:&quot;%SystemRoot%\servicing\Packages\%%i&quot;
         ///.
         /// </summary>
         internal static string GPEditEnablerInHome {
@@ -593,9 +692,34 @@ namespace Optimizer.Properties {
         
         /// <summary>
         ///   Looks up a localized string similar to {
+        ///	&quot;subSystem&quot;: &quot;Sistem&quot;,
+        ///	&quot;subPrivacy&quot;: &quot;Privatnost&quot;,
+        ///	&quot;subGaming&quot;: &quot;Igre&quot;,
+        ///	&quot;subTouch&quot;: &quot;Dodir&quot;,
+        ///	&quot;subTaskbar&quot;: &quot;Taskbar&quot;,
+        ///	&quot;subExtras&quot;: &quot;Dodaci&quot;,
+        ///	&quot;btnAbout&quot;: &quot;OK&quot;,
+        ///	&quot;restartButton&quot;: &quot;Ponovno pokreni sad&quot;,
+        ///	&quot;restartButton8&quot;: &quot;Ponovno pokreni sad&quot;,
+        ///	&quot;restartButton10&quot;: &quot;Ponovno pokreni sad&quot;,
+        ///	&quot;btnFind&quot;: &quot;Pronađi&quot;,
+        ///	&quot;btnKill&quot;: &quot;Ubi&quot;,
+        ///	&quot;trayUnlocker&quot;: &quot;Držači datoteka&quot;,
+        ///	&quot;restartAndApply&quot;: &quot;Ponovno pokrenite za primjenu promjena&quot;,
+        ///	&quot;txtVersion&quot;: &quot;Verzija: {VN}&quot;,
+        ///	&quot;txtBitness&quot;: &quot;Radite s {BITS [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string HR {
+            get {
+                return ResourceManager.GetString("HR", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {
         ///	&quot;subSystem&quot;: &quot;Rendszer&quot;,
-        ///	&quot;subPrivacy&quot;: &quot;Magánélet&quot;,
-        ///	&quot;subGaming&quot;: &quot;Szerencsejáték&quot;,
+        ///	&quot;subPrivacy&quot;: &quot;Adatvédelem&quot;,
+        ///	&quot;subGaming&quot;: &quot;Játék&quot;,
         ///	&quot;subTouch&quot;: &quot;Érintés&quot;,
         ///	&quot;subTaskbar&quot;: &quot;Tálca&quot;,
         ///	&quot;subExtras&quot;: &quot;Extrák&quot;,
@@ -603,10 +727,11 @@ namespace Optimizer.Properties {
         ///	&quot;restartButton&quot;: &quot;Újraindítás most&quot;,
         ///	&quot;restartButton8&quot;: &quot;Újraindítás most&quot;,
         ///	&quot;restartButton10&quot;: &quot;Újraindítás most&quot;,
-        ///	&quot;restartAndApply&quot;: &quot;Újraindítod az eszközt, hogy a változások érvénybe kerüljenek&quot;,
-        ///	&quot;txtVersion&quot;: &quot;Verzuó: {VN}&quot;,
-        ///	&quot;txtBitness&quot;: &quot;You are working with {BITS}&quot;,
-        ///	&quot;linkUpdate&quot;: &quot;Frissítés elérhető&quot; [rest of string was truncated]&quot;;.
+        ///	&quot;restartAndApply&quot;: &quot;Eszköz újraindítása most, hogy a változások érvénybe kerüljenek&quot;,
+        ///	&quot;txtVersion&quot;: &quot;Verzió: {VN}&quot;,
+        ///	&quot;txtBitness&quot;: &quot;Te {BITS}-el dolgozol&quot;,
+        ///	&quot;linkUpdate&quot;: &quot;Frissítés elérhető&quot;,
+        ///	&quot;lblLab [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string HU {
             get {
@@ -620,6 +745,41 @@ namespace Optimizer.Properties {
         internal static System.Drawing.Bitmap hungary {
             get {
                 object obj = ResourceManager.GetObject("hungary", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {
+        ///	&quot;subSystem&quot;: &quot;Sistem&quot;,
+        ///	&quot;subPrivacy&quot;: &quot;Privasi&quot;,
+        ///	&quot;subGaming&quot;: &quot;Gaming&quot;,
+        ///	&quot;subTouch&quot;: &quot;Sentuh&quot;,
+        ///	&quot;subTaskbar&quot;: &quot;Bilah Tugas&quot;,
+        ///	&quot;subExtras&quot;: &quot;Extra&quot;,
+        ///	&quot;btnAbout&quot;: &quot;OKE&quot;,
+        ///	&quot;restartButton&quot;: &quot;Mulai ulang sekarang&quot;,
+        ///	&quot;restartButton8&quot;: &quot;Mulai ulang sekarang&quot;,
+        ///	&quot;restartButton10&quot;: &quot;Mulai ulang sekarang&quot;,
+        ///	&quot;btnFind&quot;: &quot;Cari&quot;,
+        ///	&quot;btnKill&quot;: &quot;Hentikan&quot;,
+        ///	&quot;trayUnlocker&quot;: &quot;Menangani FIle&quot;,
+        ///	&quot;restartAndApply&quot;: &quot;Mulai ulang untuk menerapkan perubahan&quot;,
+        ///	&quot;txtVersion&quot;: &quot;Versi: {VN}&quot;,
+        ///	&quot;txtBitness&quot;: &quot;Kamu Bek [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string ID {
+            get {
+                return ResourceManager.GetString("ID", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap indonesia {
+            get {
+                object obj = ResourceManager.GetObject("indonesia", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -645,6 +805,16 @@ namespace Optimizer.Properties {
         internal static string InstallTakeOwnership {
             get {
                 return ResourceManager.GetString("InstallTakeOwnership", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap iran {
+            get {
+                object obj = ResourceManager.GetObject("iran", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
             }
         }
         
@@ -685,25 +855,63 @@ namespace Optimizer.Properties {
         
         /// <summary>
         ///   Looks up a localized string similar to {
-        ///	&quot;subSystem&quot;: &quot;체계&quot;,
-        ///	&quot;subPrivacy&quot;: &quot;은둔&quot;,
-        ///	&quot;subGaming&quot;: &quot;노름&quot;,
-        ///	&quot;subTouch&quot;: &quot;접촉&quot;,
+        ///	&quot;subSystem&quot;: &quot;システム&quot;,
+        ///	&quot;subPrivacy&quot;: &quot;プライバシー&quot;,
+        ///	&quot;subGaming&quot;: &quot;ゲーム&quot;,
+        ///	&quot;subTouch&quot;: &quot;タッチ&quot;,
+        ///	&quot;subTaskbar&quot;: &quot;タスクバー&quot;,
+        ///	&quot;subExtras&quot;: &quot;その他&quot;,
+        ///	&quot;btnAbout&quot;: &quot;OK&quot;,
+        ///	&quot;restartButton&quot;: &quot;今すぐ再起動&quot;,
+        ///	&quot;restartButton8&quot;: &quot;今すぐ再起動&quot;,
+        ///	&quot;restartButton10&quot;: &quot;今すぐ再起動&quot;,
+        ///	&quot;btnFind&quot;: &quot;検索&quot;,
+        ///	&quot;btnKill&quot;: &quot;強制終了&quot;,
+        ///	&quot;trayUnlocker&quot;: &quot;ファイル ハンドル&quot;,
+        ///	&quot;restartAndApply&quot;: &quot;再起動して変更を適用&quot;,
+        ///	&quot;txtVersion&quot;: &quot;バージョン: {VN}&quot;,
+        ///	&quot;txtBitness&quot;: &quot;{BITS}で動作しています。&quot;,
+        ///	&quot;linkUpdate&quot;: &quot;アップデートが利用可能です&quot;,
+        ///	&quot;lblLab&quot;: &quot;実験的ビルド\n(テスト後に削除されます)&quot;,
+        ///	&quot;performanceSw&quot;:  [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string JA {
+            get {
+                return ResourceManager.GetString("JA", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap japan {
+            get {
+                object obj = ResourceManager.GetObject("japan", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {
+        ///	&quot;subSystem&quot;: &quot;시스템&quot;,
+        ///	&quot;subPrivacy&quot;: &quot;개인 정보&quot;,
+        ///	&quot;subGaming&quot;: &quot;게이밍&quot;,
+        ///	&quot;subTouch&quot;: &quot;터치&quot;,
         ///	&quot;subTaskbar&quot;: &quot;작업 표시줄&quot;,
-        ///	&quot;subExtras&quot;: &quot;엑스트라&quot;,
-        ///    &quot;btnAbout&quot;: &quot;확인&quot;,
+        ///	&quot;subExtras&quot;: &quot;추가&quot;,
+        ///	&quot;btnAbout&quot;: &quot;확인&quot;,
         ///	&quot;restartButton&quot;: &quot;지금 다시 시작&quot;,
         ///	&quot;restartButton8&quot;: &quot;지금 다시 시작&quot;,
         ///	&quot;restartButton10&quot;: &quot;지금 다시 시작&quot;,
         ///	&quot;btnFind&quot;: &quot;찾기&quot;,
         ///	&quot;btnKill&quot;: &quot;죽이기&quot;,
         ///	&quot;trayUnlocker&quot;: &quot;파일 핸들&quot;,
-        ///	&quot;restartAndApply&quot;: &quot;다시 시작하여 변경 사항을 적용하시겠습니까&quot;,
+        ///	&quot;restartAndApply&quot;: &quot;다시 시작하여 변경 사항 적용&quot;,
         ///	&quot;txtVersion&quot;: &quot;버전: {VN}&quot;,
         ///	&quot;txtBitness&quot;: &quot;{BITS}로 작업중 - 한국어: 비너스걸&quot;,
         ///	&quot;linkUpdate&quot;: &quot;업데이트 가능&quot;,
         ///	&quot;lblLab&quot;: &quot;실험 빌드\n(테스트 후 삭제)&quot;,
-        ///	&quot;performanc [rest of string was truncated]&quot;;.
+        ///	&quot;performanceSw&quot;: &quot; [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string KO {
             get {
@@ -737,8 +945,8 @@ namespace Optimizer.Properties {
         ///	&quot;btnKill&quot;: &quot;بیکوژە (دایبخە)&quot;,
         ///	&quot;trayUnlocker&quot;: &quot;دەسکەکانی فایل&quot;,
         ///	&quot;restartAndApply&quot;: &quot;ڕیستارتی ئەکەیتەوە بۆ بینینی گۆڕانکاریەکان&quot;,
-        ///	&quot;txtVersion&quot;: &quot;وەشان : &quot;,
-        ///	&quot; [rest of string was truncated]&quot;;.
+        ///	&quot;txtVersion&quot;: &quot;وەشان :&quot;,
+        ///	&quot;t [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string KU {
             get {
@@ -762,6 +970,40 @@ namespace Optimizer.Properties {
         internal static System.Drawing.Bitmap logo {
             get {
                 object obj = ResourceManager.GetObject("logo", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {
+        ///	&quot;subSystem&quot;: &quot;सिस्टम&quot;,
+        ///	&quot;subPrivacy&quot;: &quot;गोपनीयता&quot;,
+        ///	&quot;subGaming&quot;: &quot;गेमिङ&quot;,
+        ///	&quot;subTouch&quot;: &quot;स्पर्श&quot;,
+        ///	&quot;subTaskbar&quot;: &quot;टास्कबार&quot;,
+        ///	&quot;subExtras&quot;: &quot;अतिरिक्त&quot;,
+        ///	&quot;btnAbout&quot;: &quot;ठिक छ&quot;,
+        ///	&quot;restartButton&quot;: &quot;अहिले पुन: प्रारंभ गर्नुहोस्&quot;,
+        ///	&quot;restartButton8&quot;: &quot;अहिले पुन: प्रारंभ गर्नुहोस्&quot;,
+        ///	&quot;restartButton10&quot;: &quot;अहिले पुन: प्रारंभ गर्नुहोस्&quot;,
+        ///	&quot;btnFind&quot;: &quot;फेला पर्ख्नुहोस्&quot;,
+        ///	&quot;btnKill&quot;: &quot;मार्नुहोस्&quot;,
+        ///	&quot;trayUnlocker&quot;: &quot;फाइल ह्यान्डलहरू&quot;,
+        ///	&quot;restartAndApply&quot;: &quot;परिवर्तन लागू गर्नका लागि पुन: प्रारंभ गर्नुहोस्&quot;,
+        ///	&quot;t [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string NE {
+            get {
+                return ResourceManager.GetString("NE", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap nepal {
+            get {
+                object obj = ResourceManager.GetObject("nepal", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -802,22 +1044,32 @@ namespace Optimizer.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap pakistan {
+            get {
+                object obj = ResourceManager.GetObject("pakistan", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to {
         ///	&quot;subSystem&quot;: &quot;System&quot;,
         ///	&quot;subPrivacy&quot;: &quot;Prywatność&quot;,
-        ///	&quot;subGaming&quot;: &quot;Hazard&quot;,
-        ///	&quot;subTouch&quot;: &quot;Dotykać&quot;,
+        ///	&quot;subGaming&quot;: &quot;Gra&quot;,
+        ///	&quot;subTouch&quot;: &quot;Dotyk&quot;,
         ///	&quot;subTaskbar&quot;: &quot;Pasek zadań&quot;,
         ///	&quot;subExtras&quot;: &quot;Dodatki&quot;,
         ///	&quot;btnAbout&quot;: &quot;OK&quot;,
         ///	&quot;restartButton&quot;: &quot;Uruchom ponownie teraz&quot;,
         ///	&quot;restartButton8&quot;: &quot;Uruchom ponownie teraz&quot;,
         ///	&quot;restartButton10&quot;: &quot;Uruchom ponownie teraz&quot;,
-        ///	&quot;btnFind&quot;: &quot;Znajdować&quot;,
-        ///	&quot;btnKill&quot;: &quot;Zabić&quot;,
-        ///	&quot;trayUnlocker&quot;: &quot;Uchwyty do plików&quot;,
+        ///	&quot;btnFind&quot;: &quot;Znajdź&quot;,
+        ///	&quot;btnKill&quot;: &quot;Zakończ&quot;,
+        ///	&quot;trayUnlocker&quot;: &quot;Deskryptory plików&quot;,
         ///	&quot;restartAndApply&quot;: &quot;Uruchom ponownie, aby zastosować zmiany&quot;,
-        ///	&quot;onedriveM&quot;: &quot;Czy na pewno chcesz odi [rest of string was truncated]&quot;;.
+        ///	&quot;onedriveM&quot;: &quot;Czy na pewno chcesz usunąć u [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string PL {
             get {
@@ -874,15 +1126,15 @@ namespace Optimizer.Properties {
         ///	&quot;subTouch&quot;: &quot;Toque&quot;,
         ///	&quot;subTaskbar&quot;: &quot;Barra de tarefas&quot;,
         ///	&quot;subExtras&quot;: &quot;Extras&quot;,
-        ///	&quot;btnAbout&quot;: &quot;OK&quot;,
-        ///	&quot;restartButton&quot;: &quot;reinicie agora&quot;,
-        ///	&quot;restartButton8&quot;: &quot;reinicie agora&quot;,
-        ///	&quot;restartButton10&quot;: &quot;reinicie agora&quot;,
+        ///	&quot;btnAbout&quot;: &quot;Feito&quot;,
+        ///	&quot;restartButton&quot;: &quot;Reinicie agora&quot;,
+        ///	&quot;restartButton8&quot;: &quot;Reinicie agora&quot;,
+        ///	&quot;restartButton10&quot;: &quot;Reinicie agora&quot;,
         ///	&quot;btnFind&quot;: &quot;Encontrar&quot;,
-        ///	&quot;btnKill&quot;: &quot;Matar&quot;,
+        ///	&quot;btnKill&quot;: &quot;Finalizar&quot;,
         ///	&quot;trayUnlocker&quot;: &quot;Alças de arquivo&quot;,
-        ///	&quot;restartAndApply&quot;: &quot;Reiniciar para aplicar as alterações&quot;,
-        ///	&quot;onedriveM&quot;: &quot;Tem certeza de que deseja desinstalar o OneDrive [rest of string was truncated]&quot;;.
+        ///	&quot;restartAndApply&quot;: &quot;Reinicie para aplicar as alterações&quot;,
+        ///	&quot;onedriveM&quot;: &quot;Tem certeza de que deseja desinstalar o On [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string PT {
             get {
@@ -906,6 +1158,26 @@ namespace Optimizer.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Windows Registry Editor Version 5.00
+        ///
+        ///; MajorGeeks.Com
+        ///; How to Restore the Windows Photo Viewer on Windows 10
+        ///; https://www.majorgeeks.com/content/page/restore_the_windows_photo_viewer_on_windows_10.html
+        ///
+        ///[HKEY_CLASSES_ROOT\Applications\photoviewer.dll\shell\open]
+        ///&quot;MuiVerb&quot;=&quot;@photoviewer.dll,-3043&quot;
+        ///
+        ///[HKEY_CLASSES_ROOT\Applications\photoviewer.dll\shell\open\command]
+        ///@=hex(2):25,00,53,00,79,00,73,00,74,00,65,00,6d,00,52,00,6f,00,6f,00,74,00,25,\
+        ///  00,5c,00,53,00,79,00,73,00,74,00,65,00,6d,00,33,0 [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string RestoreClassicPhotoViewer {
+            get {
+                return ResourceManager.GetString("RestoreClassicPhotoViewer", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to {
         ///	&quot;subSystem&quot;: &quot;Sistem&quot;,
         ///	&quot;subPrivacy&quot;: &quot;Confidențialitate&quot;,
@@ -918,11 +1190,11 @@ namespace Optimizer.Properties {
         ///	&quot;restartButton8&quot;: &quot;Reporniți acum&quot;,
         ///	&quot;restartButton10&quot;: &quot;Reporniți acum&quot;,
         ///	&quot;btnFind&quot;: &quot;Găsește&quot;,
-        ///	&quot;btnKill&quot;: &quot;Termin&quot;,
+        ///	&quot;btnKill&quot;: &quot;Terminati&quot;,
         ///	&quot;trayUnlocker&quot;: &quot;Mânere de fișiere&quot;,
-        ///	&quot;restartAndApply&quot;: &quot;Reporniți pentru a aplica modificări&quot;,
-        ///	&quot;txtVersion&quot;: &quot;Versiune: {VN}&quot;,
-        ///	&quot;txtBitness&quot;:  [rest of string was truncated]&quot;;.
+        ///	&quot;restartAndApply&quot;: &quot;Reporniți pentru a aplica modificările&quot;,
+        ///	&quot;txtVersion&quot;: &quot;Versiunea: {VN}&quot;,
+        ///	&quot;txtBitn [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string RO {
             get {
@@ -945,7 +1217,7 @@ namespace Optimizer.Properties {
         ///	&quot;subSystem&quot;: &quot;Система&quot;,
         ///	&quot;subPrivacy&quot;: &quot;Конфиденциальность&quot;,
         ///	&quot;subGaming&quot;: &quot;Игры&quot;,
-        ///	&quot;subTouch&quot;: &quot;Трогать&quot;,
+        ///	&quot;subTouch&quot;: &quot;Сенсорный экран&quot;,
         ///	&quot;subTaskbar&quot;: &quot;Панель задач&quot;,
         ///	&quot;subExtras&quot;: &quot;Дополнительно&quot;,
         ///	&quot;btnAbout&quot;: &quot;OK&quot;,
@@ -956,7 +1228,7 @@ namespace Optimizer.Properties {
         ///	&quot;txtVersion&quot;: &quot;Версия: {VN}&quot;,
         ///	&quot;btnFind&quot;: &quot;Находить&quot;,
         ///	&quot;btnKill&quot;: &quot;Убийство&quot;,
-        ///	&quot;trayUnlocker&quot;: &quot;Дескрипторы файл [rest of string was truncated]&quot;;.
+        ///	&quot;trayUnlocker&quot;: &quot;Дескрипт [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string RU {
             get {
@@ -1072,23 +1344,22 @@ namespace Optimizer.Properties {
         ///   Looks up a localized string similar to {
         ///	&quot;subSystem&quot;: &quot;系統&quot;,
         ///	&quot;subPrivacy&quot;: &quot;隱私&quot;,
-        ///	&quot;subGaming&quot;: &quot;賭博&quot;,
-        ///	&quot;subTouch&quot;: &quot;觸碰&quot;,
-        ///	&quot;subTaskbar&quot;: &quot;任務欄&quot;,
-        ///	&quot;subExtras&quot;: &quot;附加功能&quot;,
+        ///	&quot;subGaming&quot;: &quot;遊戲&quot;,
+        ///	&quot;subTouch&quot;: &quot;觸控&quot;,
+        ///	&quot;subTaskbar&quot;: &quot;工作列&quot;,
+        ///	&quot;subExtras&quot;: &quot;額外功能&quot;,
         ///	&quot;btnAbout&quot;: &quot;確定&quot;,
-        ///	&quot;restartButton&quot;: &quot;現在重啟&quot;,
-        ///	&quot;restartButton8&quot;: &quot;現在重啟&quot;,
-        ///	&quot;restartButton10&quot;: &quot;現在重啟&quot;,
-        ///	&quot;restartAndApply&quot;: &quot;重新啟動以應用更改&quot;,
-        ///	&quot;onedriveM&quot;: &quot;確定要卸載 OneDrive 嗎？ 這將刪除您的桌面和文檔文件！ 僅在本地帳戶上使用此選項！&quot;,
-        ///	&quot;txtVersion&quot;: &quot;版本: {VN}&quot;,
-        ///	&quot;systemRestoreM&quot;: &quot;您確定要禁用系統還原嗎？ 這將刪除您當前的備份圖像！&quot;,
-        ///	&quot;txtBitness&quot;: &quot;您使用的是{BITS}&quot;,
+        ///	&quot;restartButton&quot;: &quot;立即重新啟動&quot;,
+        ///	&quot;restartButton8&quot;: &quot;立即重新啟動&quot;,
+        ///	&quot;restartButton10&quot;: &quot;立即重新啟動&quot;,
+        ///	&quot;restartAndApply&quot;: &quot;重新啟動以套用變更&quot;,
+        ///	&quot;onedriveM&quot;: &quot;您確定要移除 OneDrive 嗎？這將刪除您的桌面和文件檔案！僅在本機帳戶上使用此選項！&quot;,
+        ///	&quot;txtVersion&quot;: &quot;版本：{VN}&quot;,
+        ///	&quot;systemRestoreM&quot;: &quot;您確定要停用系統還原嗎？這將刪除您目前的備份映像！&quot;,
+        ///	&quot;txtBitness&quot;: &quot;您正在使用 {BITS}&quot;,
         ///	&quot;btnFind&quot;: &quot;尋找&quot;,
-        ///	&quot;btnKill&quot;: &quot;殺&quot;,
-        ///	&quot;trayUnlocker&quot;: &quot;文件句柄&quot;,
-        ///	&quot;li [rest of string was truncated]&quot;;.
+        ///	&quot;btnKill&quot;: &quot;結束&quot;,
+        ///	&quot;trayUnlocker&quot;: &quot;檔案控制&quot;,        /// [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string TW {
             get {
@@ -1103,7 +1374,7 @@ namespace Optimizer.Properties {
         ///	&quot;subGaming&quot;: &quot;Ігри&quot;,
         ///	&quot;subTouch&quot;: &quot;Дотик&quot;,
         ///	&quot;subTaskbar&quot;: &quot;Панель задач&quot;,
-        ///	&quot;subExtras&quot;: &quot; Доповнення&quot;,
+        ///	&quot;subExtras&quot;: &quot;Доповнення&quot;,
         ///	&quot;btnAbout&quot;: &quot;OK&quot;,
         ///	&quot;restartButton&quot;: &quot;Перезапустити зараз&quot;,
         ///	&quot;restartButton8&quot;: &quot;Перезапустити зараз&quot;,
@@ -1113,7 +1384,7 @@ namespace Optimizer.Properties {
         ///	&quot;trayUnlocker&quot;: &quot;Дескриптор файлів&quot;,
         ///	&quot;restartAndApply&quot;: &quot;Перезапустити для застосування змін&quot;,
         ///	&quot;txtVersion&quot;: &quot;Версія: {VN}&quot;,
-        ///	 [rest of string was truncated]&quot;;.
+        ///	&quot; [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string UA {
             get {
@@ -1138,6 +1409,66 @@ namespace Optimizer.Properties {
             get {
                 object obj = ResourceManager.GetObject("united_kingdom", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {
+        ///&quot;subSystem&quot;: &quot;سسٹم&quot;,
+        ///&quot;subPrivacy&quot;: &quot;رازداری&quot;,
+        ///&quot;subGaming&quot;: &quot;گیمنگ&quot;,
+        ///&quot;subTouch&quot;: &quot;ٹچ&quot;,
+        ///&quot;subTaskbar&quot;: &quot;ٹاسک بار&quot;,
+        ///&quot;subExtras&quot;: &quot;اضافی&quot;,
+        ///&quot;btnAbout&quot;: &quot;ٹھیک ہے&quot;,
+        ///&quot;restartButton&quot;: &quot;ابھی دوبارہ شروع کریں&quot;,
+        ///&quot;restartButton8&quot;: &quot;ابھی دوبارہ شروع کریں&quot;,
+        ///&quot;restartButton10&quot;: &quot;ابھی دوبارہ شروع کریں&quot;,
+        ///&quot;btnFind&quot;: &quot;تلاش کریں&quot;,
+        ///&quot;btnKill&quot;: &quot;مار ڈالو&quot;,
+        ///&quot;trayUnlocker&quot;: &quot;فائل ہینڈلز&quot;,
+        ///&quot;restartAndApply&quot;: &quot;تبدیلیاں لاگو کرنے کے لیے دوبارہ شروع کریں&quot;,
+        ///&quot;txtVersion&quot;: &quot;ورژن: {VN}&quot;,
+        ///&quot;txtBitness&quot;: &quot;آپ {BITS} کے ساتھ کام  [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string UR {
+            get {
+                return ResourceManager.GetString("UR", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap vietnam {
+            get {
+                object obj = ResourceManager.GetObject("vietnam", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {
+        ///  &quot;subSystem&quot;: &quot;Hệ thống&quot;,
+        ///  &quot;subPrivacy&quot;: &quot;Quyền riêng tư&quot;,
+        ///  &quot;subGaming&quot;: &quot;Gaming&quot;,
+        ///  &quot;subTouch&quot;: &quot;Cảm ứng&quot;,
+        ///  &quot;subTaskbar&quot;: &quot;Taskbar&quot;,
+        ///  &quot;subExtras&quot;: &quot;Extras&quot;,
+        ///  &quot;btnAbout&quot;: &quot;OK&quot;,
+        ///  &quot;restartButton&quot;: &quot;Khởi động lại ngay&quot;,
+        ///  &quot;restartButton8&quot;: &quot;Khởi động lại ngay&quot;,
+        ///  &quot;restartButton10&quot;: &quot;Khởi động lại ngay&quot;,
+        ///  &quot;btnFind&quot;: &quot;Tìm&quot;,
+        ///  &quot;btnKill&quot;: &quot;Dừng&quot;,
+        ///  &quot;trayUnlocker&quot;: &quot;Xử lý tệp&quot;,
+        ///  &quot;restartAndApply&quot;: &quot;Khởi động lại để áp dụng thay đổi&quot;,
+        ///  &quot;txtVersion&quot;: &quot;Phiên bản: {VN}&quot;,
+        ///  &quot;txtBitness&quot;: &quot;Bạn [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string VN {
+            get {
+                return ResourceManager.GetString("VN", resourceCulture);
             }
         }
         
